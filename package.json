@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "smoke": "KANRISHA_MOCK=1 bun run scripts/render-smoke.tsx",
     "probe": "bun run scripts/probe.ts",
-    "probe:servers": "bun run scripts/probe-servers.ts"
+    "probe:servers": "bun run scripts/probe-servers.ts",
+    "probe:deploy": "bun run scripts/probe-deploy.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
