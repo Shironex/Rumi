@@ -1,4 +1,4 @@
-import { type CoolifyResource, normalizeKind, parseState } from "./types.ts";
+import { type CoolifyResource, type CoolifyServer, normalizeKind, parseState } from "./types.ts";
 
 const SAMPLES: ReadonlyArray<readonly [name: string, rawType: string, status: string]> = [
   ["lunofi-api", "application", "running:healthy"],
@@ -21,6 +21,15 @@ export function mockLogs(name: string): string[] {
     `[12:00:05] INFO  GET /api/v1/resources 200 41ms`,
     `[12:00:06] ERROR upstream timeout, retrying (1/3)`,
     `[12:00:07] INFO  upstream reconnected`,
+  ];
+}
+
+/** Sample servers for offline UI work. */
+export function mockServers(): CoolifyServer[] {
+  return [
+    { uuid: "srv-0", name: "production-main", ip: "193.70.35.124", description: "primary host", reachable: true, usable: true, isCoolifyHost: true, buildServer: false },
+    { uuid: "srv-1", name: "production-alt", ip: "51.83.100.121", reachable: true, usable: true, isCoolifyHost: false, buildServer: true },
+    { uuid: "srv-2", name: "edge-cdn", ip: "10.0.0.9", reachable: false, usable: false, isCoolifyHost: false, buildServer: false },
   ];
 }
 

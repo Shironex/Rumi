@@ -29,6 +29,18 @@ export interface CoolifyResource {
   meta: ResourceMeta;
 }
 
+/** A Coolify host, from GET /api/v1/servers (separate from /resources). */
+export interface CoolifyServer {
+  uuid: string;
+  name: string;
+  description?: string;
+  ip: string;
+  reachable: boolean;
+  usable: boolean;
+  isCoolifyHost: boolean;
+  buildServer: boolean;
+}
+
 const DB_HINTS = [
   "postgres",
   "mysql",

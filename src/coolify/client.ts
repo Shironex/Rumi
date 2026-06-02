@@ -1,6 +1,17 @@
 import type { CoolifyContext } from "../config.ts";
 import { actionSegment, type LifecycleAction } from "./actions.ts";
-import { type CoolifyResource, normalizeKind, parseState } from "./types.ts";
+import { type CoolifyResource, type CoolifyServer, normalizeKind, parseState } from "./types.ts";
+
+interface RawServer {
+  uuid?: string;
+  name?: string;
+  description?: string | null;
+  ip?: string;
+  is_reachable?: boolean;
+  is_usable?: boolean;
+  is_coolify_host?: boolean;
+  settings?: { is_build_server?: boolean } | null;
+}
 
 interface RawResource {
   uuid?: string;
@@ -54,6 +65,13 @@ export class CoolifyClient {
     return data.map(toResource);
   }
 
+  async listServers(signal?: AbortSignal): Promise<CoolifyServer[]> {
+    const res = await fetch(`${this.ctx.fqdn}/api/v1/servers`, { headers: this.headers(), signal });
+    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
+    const data = (await res.json()) as RawServer[];
+    return data.map(toServer);
+  }
+
   /** REST logs exist for standalone applications only (services/databases 404). */
   async getApplicationLogs(uuid: string, lines: number, signal?: AbortSignal): Promise<string> {
     const res = await fetch(`${this.ctx.fqdn}/api/v1/applications/${uuid}/logs?lines=${lines}`, {
@@ -81,6 +99,19 @@ export class CoolifyClient {
     const res = await fetch(`${this.ctx.fqdn}${path}`, { method: "POST", headers: this.headers(), signal });
     if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
   }
+}
+
+function toServer(raw: RawServer): CoolifyServer {
+  return {
+    uuid: raw.uuid ?? "",
+    name: raw.name ?? "(unnamed)",
+    description: cleanStr(raw.description),
+    ip: raw.ip ?? "",
+    reachable: raw.is_reachable ?? false,
+    usable: raw.is_usable ?? false,
+    isCoolifyHost: raw.is_coolify_host ?? false,
+    buildServer: raw.settings?.is_build_server ?? false,
+  };
 }
 
 function toResource(raw: RawResource): CoolifyResource {
