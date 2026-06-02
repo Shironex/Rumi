@@ -20,6 +20,13 @@ case "$arch" in
   *) echo "Unsupported architecture: $arch" >&2; exit 1 ;;
 esac
 
+# x64 (Intel) macOS is not published yet (Intel is being sunset; it is on the roadmap).
+if [ "$os" = "darwin" ] && [ "$arch" = "x64" ]; then
+  echo "No Intel (x64) macOS build is published yet. Apple Silicon installs automatically." >&2
+  echo "Meanwhile, build from source: https://github.com/${REPO}#build-from-source" >&2
+  exit 1
+fi
+
 asset="rumi-${os}-${arch}"
 url="https://github.com/${REPO}/releases/latest/download/${asset}"
 

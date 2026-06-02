@@ -23,6 +23,8 @@ Dates are intentionally absent; things ship when they are ready.
 
 ## Next up
 
+- **x64 (Intel) macOS build.** v0.1.0 ships arm64 macOS only; the Intel smoke is
+  flaky on the CI runner. Stabilize it and publish the x64 binary.
 - **Windows polish.** A proper `install.ps1` with PATH handling, plus a pass on
   the self-update rename dance and terminal restore on quit.
 - **Release hardening.** Confirm the multi-arch release pipeline end to end and

@@ -58,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/Shironex/Rumi/main/install.sh | sh
 
 This installs the right binary for your platform into `~/.local/bin` (override with `RUMI_INSTALL_DIR`). Make sure that directory is on your `PATH`.
 
-Prebuilt binaries are published for **macOS** (arm64, x64) and **Linux** (x64, arm64) on the [releases page](https://github.com/Shironex/Rumi/releases).
+Prebuilt binaries are published for **macOS** (arm64) and **Linux** (x64, arm64) on the [releases page](https://github.com/Shironex/Rumi/releases). An x64 (Intel) macOS build is on the roadmap.
 
 ### Windows
 
