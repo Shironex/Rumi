@@ -1,4 +1,12 @@
-import { type CoolifyResource, type CoolifyServer, type Deployment, normalizeKind, parseState } from "./types.ts";
+import {
+  type ConfigField,
+  type CoolifyResource,
+  type CoolifyServer,
+  type Deployment,
+  type EnvVar,
+  normalizeKind,
+  parseState,
+} from "./types.ts";
 
 const SAMPLES: ReadonlyArray<readonly [name: string, rawType: string, status: string]> = [
   ["lunofi-api", "application", "running:healthy"],
@@ -41,6 +49,32 @@ export function mockDeployment(): Deployment {
       { text: "New container started. Deployment finished.", type: "stdout", hidden: false },
     ],
   };
+}
+
+/** Sample env vars (with values, so the mask/reveal toggle is exercised offline). */
+export function mockEnvVars(): EnvVar[] {
+  const base = { buildtime: false, runtime: true, required: false, shared: false, preview: false, multiline: false, managed: false };
+  return [
+    { ...base, key: "DATABASE_URL", value: "postgres://app:s3cr3t@db:5432/app", buildtime: true, required: true },
+    { ...base, key: "NODE_ENV", value: "production", buildtime: true },
+    { ...base, key: "LOG_LEVEL", value: "info" },
+    { ...base, key: "SENTRY_DSN", value: "https://abc123@o1.ingest.sentry.io/42", shared: true },
+    { ...base, key: "COOLIFY_FQDN", value: "app.example.com", managed: true },
+  ];
+}
+
+/** Sample curated config for offline UI work. */
+export function mockConfig(): ConfigField[] {
+  return [
+    { label: "status", value: "running:healthy" },
+    { label: "build pack", value: "nixpacks" },
+    { label: "branch", value: "main" },
+    { label: "commit", value: "a1b2c3d" },
+    { label: "ports exposed", value: "3000" },
+    { label: "health check", value: "/health" },
+    { label: "memory limit", value: "512M" },
+    { label: "config hash", value: "9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c" },
+  ];
 }
 
 /** Sample servers for offline UI work. */

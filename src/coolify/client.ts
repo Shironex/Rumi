@@ -1,9 +1,11 @@
 import type { CoolifyContext } from "../config.ts";
 import { actionSegment, type LifecycleAction } from "./actions.ts";
 import {
+  type ConfigField,
   type CoolifyResource,
   type CoolifyServer,
   type Deployment,
+  type EnvVar,
   normalizeKind,
   parseDeployLogs,
   parseState,
@@ -15,6 +17,20 @@ interface RawDeployment {
   commit?: string | null;
   commit_message?: string | null;
   logs?: string;
+}
+
+interface RawEnv {
+  key?: string;
+  value?: string;
+  real_value?: string;
+  is_buildtime?: boolean;
+  is_runtime?: boolean;
+  is_required?: boolean;
+  is_really_required?: boolean;
+  is_shared?: boolean;
+  is_preview?: boolean;
+  is_multiline?: boolean;
+  is_coolify?: boolean;
 }
 
 interface RawServer {
@@ -126,6 +142,32 @@ export class CoolifyClient {
     return (data.deployments ?? []).map(toDeployment);
   }
 
+  /** Env vars for an app/service. Values come back only with a sensitive-read token. */
+  async getEnvVars(resource: CoolifyResource, signal?: AbortSignal): Promise<EnvVar[]> {
+    const segment = actionSegment(resource.kind);
+    if (segment !== "applications" && segment !== "services") return [];
+    const res = await fetch(`${this.ctx.fqdn}/api/v1/${segment}/${resource.uuid}/envs`, {
+      headers: this.headers(),
+      signal,
+    });
+    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
+    const data = (await res.json()) as RawEnv[];
+    return (Array.isArray(data) ? data : []).map(toEnvVar);
+  }
+
+  /** Curated deployment configuration for an app/service, read off the detail object. */
+  async getConfig(resource: CoolifyResource, signal?: AbortSignal): Promise<ConfigField[]> {
+    const segment = actionSegment(resource.kind);
+    if (segment !== "applications" && segment !== "services") return [];
+    const res = await fetch(`${this.ctx.fqdn}/api/v1/${segment}/${resource.uuid}`, {
+      headers: this.headers(),
+      signal,
+    });
+    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
+    const raw = (await res.json()) as Record<string, unknown>;
+    return curateConfig(raw);
+  }
+
   private async post(path: string, signal?: AbortSignal): Promise<unknown> {
     const res = await fetch(`${this.ctx.fqdn}${path}`, { method: "POST", headers: this.headers(), signal });
     if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
@@ -159,6 +201,59 @@ function toDeployment(raw: RawDeployment): Deployment {
     commitMessage: cleanStr(raw.commit_message),
     lines: parseDeployLogs(raw.logs),
   };
+}
+
+function toEnvVar(raw: RawEnv): EnvVar {
+  // Preserve an explicit empty string (a set-but-empty var); only undefined means "hidden".
+  const value =
+    typeof raw.value === "string" ? raw.value : typeof raw.real_value === "string" ? raw.real_value : undefined;
+  return {
+    key: raw.key ?? "",
+    value,
+    buildtime: raw.is_buildtime ?? false,
+    runtime: raw.is_runtime ?? false,
+    required: (raw.is_required ?? false) || (raw.is_really_required ?? false),
+    shared: raw.is_shared ?? false,
+    preview: raw.is_preview ?? false,
+    multiline: raw.is_multiline ?? false,
+    managed: raw.is_coolify ?? false,
+  };
+}
+
+/** Detail-object keys worth surfacing, in display order. Missing/empty ones drop out. */
+const CONFIG_FIELDS: ReadonlyArray<readonly [label: string, key: string]> = [
+  ["status", "status"],
+  ["build pack", "build_pack"],
+  ["branch", "git_branch"],
+  ["commit", "git_commit_sha"],
+  ["repository", "git_repository"],
+  ["dockerfile", "dockerfile_location"],
+  ["compose", "docker_compose_location"],
+  ["ports exposed", "ports_exposes"],
+  ["ports mapped", "ports_mappings"],
+  ["health check", "health_check_path"],
+  ["memory limit", "limits_memory"],
+  ["cpu limit", "limits_cpus"],
+  ["install cmd", "install_command"],
+  ["build cmd", "build_command"],
+  ["start cmd", "start_command"],
+  ["pre deploy", "pre_deployment_command"],
+  ["post deploy", "post_deployment_command"],
+  ["last online", "last_online_at"],
+  ["config hash", "config_hash"],
+];
+
+function curateConfig(raw: Record<string, unknown>): ConfigField[] {
+  const fields: ConfigField[] = [];
+  for (const [label, key] of CONFIG_FIELDS) {
+    const v = raw[key];
+    if (v === null || v === undefined) continue;
+    let str = typeof v === "string" ? v.trim() : typeof v === "number" || typeof v === "boolean" ? String(v) : "";
+    if (!str || str === "0") continue;
+    if (key === "git_commit_sha") str = str.slice(0, 7);
+    fields.push({ label, value: str });
+  }
+  return fields;
 }
 
 function toServer(raw: RawServer): CoolifyServer {

@@ -29,6 +29,43 @@ export interface CoolifyResource {
   meta: ResourceMeta;
 }
 
+/**
+ * One environment variable for a resource. `value` is present only when the API
+ * token carries the sensitive-read scope; a plain read token gets it stripped,
+ * so we render keys + scope flags and note that values are hidden.
+ */
+export interface EnvVar {
+  key: string;
+  value?: string;
+  buildtime: boolean;
+  runtime: boolean;
+  required: boolean;
+  shared: boolean;
+  preview: boolean;
+  multiline: boolean;
+  /** Managed by Coolify itself (injected platform var), not user-defined. */
+  managed: boolean;
+}
+
+/** One curated line in the config inspector (label + already-stringified value). */
+export interface ConfigField {
+  label: string;
+  value: string;
+}
+
+/** Compact scope tags for an env var, e.g. ["build", "runtime", "required"]. */
+export function envScopeTags(env: EnvVar): string[] {
+  const tags: string[] = [];
+  if (env.buildtime) tags.push("build");
+  if (env.runtime) tags.push("runtime");
+  if (env.required) tags.push("required");
+  if (env.shared) tags.push("shared");
+  if (env.preview) tags.push("preview");
+  if (env.multiline) tags.push("multiline");
+  if (env.managed) tags.push("system");
+  return tags;
+}
+
 /** One line of build/deploy output. `command` lines are the shell steps Coolify ran. */
 export type DeployLogType = "stdout" | "stderr" | "command";
 
