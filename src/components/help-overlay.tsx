@@ -21,12 +21,14 @@ const SECTIONS: ReadonlyArray<{ title: string; keys: ReadonlyArray<readonly [str
     ],
   },
   {
-    title: "logs",
+    title: "logs & inspect",
     keys: [
       ["l", "runtime logs"],
       ["L", "deploy / build logs"],
+      ["e", "config + env vars"],
+      ["v", "reveal env values"],
       ["↑ ↓", "scroll while open"],
-      ["esc", "close logs"],
+      ["esc", "close overlay"],
     ],
   },
   {

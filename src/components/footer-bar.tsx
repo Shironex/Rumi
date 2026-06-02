@@ -1,15 +1,16 @@
 import { colors } from "../theme.ts";
 
 type View = "resources" | "servers";
+type OverlayKind = "runtime" | "deploy" | "config" | null;
 
 interface Props {
   filterMode: boolean;
   filter: string;
-  logsOpen: boolean;
+  overlayKind: OverlayKind;
   view: View;
 }
 
-export function FooterBar({ filterMode, filter, logsOpen, view }: Props) {
+export function FooterBar({ filterMode, filter, overlayKind, view }: Props) {
   if (filterMode) {
     return (
       <box flexDirection="row">
@@ -20,12 +21,14 @@ export function FooterBar({ filterMode, filter, logsOpen, view }: Props) {
   }
 
   let hints: string;
-  if (logsOpen) {
+  if (overlayKind === "config") {
+    hints = "↑↓ scroll   v values   e/esc close   q quit";
+  } else if (overlayKind) {
     hints = "tailing   ↑↓ scroll   esc close   q quit";
   } else if (view === "servers") {
     hints = "↑↓/jk move   R refresh   c context   tab resources   ? help   q quit";
   } else {
-    hints = "↑↓/jk move   / filter   l logs   L deploy   s/r/d act   R refresh   c context   tab servers   ? help   q quit";
+    hints = "↑↓/jk move   / filter   l logs   L deploy   e config   s/r/d act   R refresh   c context   tab servers   ? help   q quit";
   }
   return <text fg={colors.dim}>{hints}</text>;
 }

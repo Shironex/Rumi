@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { ConfigPane } from "./components/config-pane.tsx";
 import { ConfirmModal } from "./components/confirm-modal.tsx";
 import { ContextModal } from "./components/context-modal.tsx";
 import { DeployLogsPane } from "./components/deploy-logs-pane.tsx";
@@ -16,6 +17,7 @@ import { Toast } from "./components/toast.tsx";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
 import { type CoolifyResource, isTerminalStatus } from "./coolify/types.ts";
 import { useActions } from "./hooks/use-actions.ts";
+import { useConfig } from "./hooks/use-config.ts";
 import { useContexts } from "./hooks/use-contexts.ts";
 import { useDeployLogs } from "./hooks/use-deploy-logs.ts";
 import { useLogs } from "./hooks/use-logs.ts";
@@ -28,9 +30,11 @@ import { clamp } from "./util.ts";
 type View = "resources" | "servers";
 type Overlay =
   | { kind: "runtime"; resource: CoolifyResource }
-  | { kind: "deploy"; resource: CoolifyResource; trackUuid?: string };
+  | { kind: "deploy"; resource: CoolifyResource; trackUuid?: string }
+  | { kind: "config"; resource: CoolifyResource };
 
 const LOGS_HEIGHT = 14;
+const CONFIG_HEIGHT = 18;
 const USE_MOCK = process.env.KANRISHA_MOCK === "1";
 
 export function App() {
@@ -47,6 +51,8 @@ export function App() {
     overlay?.kind === "deploy" ? overlay.trackUuid : undefined,
     overlay?.kind === "deploy",
   );
+  const config = useConfig(contexts.active, overlay?.kind === "config" ? overlay.resource : undefined, overlay?.kind === "config");
+  const [revealEnv, setRevealEnv] = useState(false);
   const toast = useToast();
   const actions = useActions(contexts.active, (resource, id, deploymentUuid) => {
     list.refresh();
@@ -111,6 +117,8 @@ export function App() {
       if (e.name === "escape") setOverlay(null);
       else if (overlay.kind === "runtime" && e.name === "l") setOverlay(null);
       else if (overlay.kind === "deploy" && wantsDeployLog) setOverlay(null);
+      else if (overlay.kind === "config" && e.name === "e") setOverlay(null);
+      else if (overlay.kind === "config" && e.name === "v") setRevealEnv((r) => !r);
       else if (e.name === "up" || e.name === "k") logScrollRef.current?.scrollBy(-1);
       else if (e.name === "down" || e.name === "j") logScrollRef.current?.scrollBy(1);
       else if (e.name === "pageup") logScrollRef.current?.scrollBy(-1, "viewport");
@@ -159,6 +167,13 @@ export function App() {
         if (list.selectedRow) setOverlay({ kind: "runtime", resource: list.selectedRow });
         return;
       }
+      if (e.name === "e") {
+        if (list.selectedRow) {
+          setRevealEnv(false);
+          setOverlay({ kind: "config", resource: list.selectedRow });
+        }
+        return;
+      }
       const row = list.selectedRow;
       if (row && canAct(row)) {
         if (e.name === "s") {
@@ -184,7 +199,8 @@ export function App() {
     }
   });
 
-  const viewportHeight = Math.max(3, height - 7 - (overlayOpen ? LOGS_HEIGHT : 0));
+  const overlayHeight = overlay?.kind === "config" ? CONFIG_HEIGHT : LOGS_HEIGHT;
+  const viewportHeight = Math.max(3, height - 7 - (overlayOpen ? overlayHeight : 0));
 
   return (
     <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
@@ -252,9 +268,24 @@ export function App() {
           scrollRef={logScrollRef}
           spinner={spinner}
         />
+      ) : overlay?.kind === "config" ? (
+        <ConfigPane
+          name={overlay.resource.name}
+          config={config.config}
+          envs={config.envs}
+          valuesAvailable={config.valuesAvailable}
+          reveal={revealEnv}
+          loading={config.loading}
+          error={config.error}
+          supported={config.supported}
+          height={CONFIG_HEIGHT}
+          maxWidth={width - 6}
+          focused
+          scrollRef={logScrollRef}
+        />
       ) : null}
 
-      <FooterBar filterMode={list.filterMode} filter={list.filter} logsOpen={overlayOpen} view={view} />
+      <FooterBar filterMode={list.filterMode} filter={list.filter} overlayKind={overlay?.kind ?? null} view={view} />
 
       {actions.pending ? (
         <ConfirmModal
