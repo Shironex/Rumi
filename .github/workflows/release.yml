@@ -14,9 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-14
+          # macOS 13 (Intel) was retired by GitHub in Dec 2025; macos-15-intel is
+          # its free standard-runner replacement. macos-15 is the current arm64
+          # pin (macOS 26 is GA, so 14 is on the deprecation path).
+          - runner: macos-15
             asset: rumi-darwin-arm64
-          - runner: macos-13
+          - runner: macos-15-intel
             asset: rumi-darwin-x64
           - runner: ubuntu-latest
             asset: rumi-linux-x64
@@ -27,6 +30,8 @@ jobs:
           - runner: windows-latest
             asset: rumi-windows-x64.exe
     runs-on: ${{ matrix.runner }}
+    # Native compile + smoke; cap well below the 6h default to protect runner minutes.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -41,7 +46,10 @@ jobs:
           sed -i.bak 's/VERSION = "[^"]*"/VERSION = "'"$v"'"/' src/version.ts && rm -f src/version.ts.bak
           sed -i.bak 's/"version": "[^"]*"/"version": "'"$v"'"/' package.json && rm -f package.json.bak
       # Gate the binary on a passing render: don't publish a crash-on-launch build.
+      # Step timeout backs up the in-script watchdog so a render deadlock fails
+      # this build instead of hanging the runner.
       - run: bun run smoke
+        timeout-minutes: 5
       - name: Build (native, no cross-compile — OpenTUI ships per-platform native modules)
         run: bun build --compile ./src/index.tsx --outfile "${{ matrix.asset }}"
       - name: Ad-hoc sign (macOS)
@@ -55,6 +63,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
