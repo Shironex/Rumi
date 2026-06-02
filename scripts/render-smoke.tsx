@@ -10,8 +10,10 @@ import { ConfigPane } from "../src/components/config-pane.tsx";
 import { DeployLogsPane } from "../src/components/deploy-logs-pane.tsx";
 import { LogsPane } from "../src/components/logs-pane.tsx";
 import { Onboarding } from "../src/components/onboarding.tsx";
+import { ResourcesTable } from "../src/components/resources-table.tsx";
+import { ServersPane } from "../src/components/servers-pane.tsx";
 import { Splash } from "../src/components/splash.tsx";
-import { CoolifyConnectionError } from "../src/coolify/client.ts";
+import { CoolifyConnectionError, toServer } from "../src/coolify/client.ts";
 import { mockEnvVars, mockResources } from "../src/coolify/mock.ts";
 
 if (process.env.RUMI_MOCK !== "1") {
@@ -226,6 +228,59 @@ const serversFrame = s.captureCharFrame();
 assert(serversFrame.includes("servers ("), "tab switches to the servers view");
 assert(serversFrame.includes("production-main"), "server row renders");
 s.renderer.destroy();
+
+// Reachability is read from the nested `settings` object the live Coolify API
+// uses (toServer once read only the top level, so every server showed red
+// "unreachable"). Map a raw server with nested settings and assert the pane
+// renders it ready — exercises the real toServer->ServersPane path the mock skips.
+const nested = toServer({ uuid: "srv-n", name: "nested-host", ip: "9.9.9.9", settings: { is_reachable: true, is_usable: true } });
+const sv = await testRender(
+  <ServersPane servers={[nested]} selectedIndex={0} loading={false} error={null} viewportHeight={10} />,
+  { width: 140, height: 16 },
+);
+await sv.waitForFrame((f) => f.includes("nested-host"), { maxPasses: 200 });
+const svFrame = sv.captureCharFrame();
+assert(svFrame.includes("ready"), "server reachability reads from nested settings (C1)");
+assert(!svFrame.includes("unreachable"), "nested-settings server is not mislabeled unreachable (C1)");
+sv.renderer.destroy();
+
+// A transient poll error must NOT blank a table that already has rows — the hook
+// keeps last-good data, so the pane should keep rendering it (S4).
+const rErr = await testRender(
+  <ResourcesTable resources={mockResources()} total={7} filter="" selectedIndex={0} focused viewportHeight={10} loading={false} error="Coolify API error 500" />,
+  { width: 140, height: 16 },
+);
+await rErr.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 200 });
+assert(rErr.captureCharFrame().includes("lunofi-api"), "resources table keeps last-good rows on a transient poll error (S4)");
+rErr.renderer.destroy();
+
+const svErr = await testRender(
+  <ServersPane servers={[nested]} selectedIndex={0} loading={false} error="Coolify API error 500" viewportHeight={10} />,
+  { width: 140, height: 16 },
+);
+await svErr.waitForFrame((f) => f.includes("nested-host"), { maxPasses: 200 });
+const svErrFrame = svErr.captureCharFrame();
+assert(svErrFrame.includes("nested-host"), "servers pane keeps last-good rows on a transient poll error (S4)");
+assert(svErrFrame.includes("Coolify API error 500"), "servers pane surfaces the error as a warning line (S4)");
+svErr.renderer.destroy();
+
+// Servers view shows a last-updated timestamp in its title (parity with resources) (N5).
+const svFresh = await testRender(
+  <ServersPane servers={[nested]} selectedIndex={0} loading={false} error={null} viewportHeight={10} lastUpdated={1733155822000} />,
+  { width: 140, height: 16 },
+);
+await svFresh.waitForFrame((f) => f.includes("nested-host"), { maxPasses: 200 });
+assert(svFresh.captureCharFrame().includes("servers (1) ·"), "servers pane shows a last-updated timestamp (N5)");
+svFresh.renderer.destroy();
+
+// A config file that exists but can't be parsed must show the reason, not the
+// first-run "nothing configured" copy (S5).
+const oErr = await testRender(<Onboarding configError={"Unexpected end of JSON input"} />, { width: 100, height: 16 });
+await oErr.waitForFrame((f) => f.includes("Couldn't read"), { maxPasses: 200 });
+const oErrFrame = oErr.captureCharFrame();
+assert(oErrFrame.includes("Couldn't read your Coolify config"), "onboarding surfaces a broken-config error (S5)");
+assert(oErrFrame.includes("Unexpected end of JSON input"), "broken-config error shows the parse reason (S5)");
+oErr.renderer.destroy();
 
 console.log("\nrender smoke passed.\n");
 console.log(appLogs);
