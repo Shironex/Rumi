@@ -11,7 +11,8 @@
     "probe": "bun run scripts/probe.ts",
     "probe:servers": "bun run scripts/probe-servers.ts",
     "probe:deploy": "bun run scripts/probe-deploy.ts",
-    "probe:env": "bun run scripts/probe-env.ts"
+    "probe:env": "bun run scripts/probe-env.ts",
+    "make:splash": "bun run scripts/make-splash.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
