@@ -16,6 +16,20 @@ if (process.env.RUMI_MOCK !== "1") {
   process.exit(1);
 }
 
+// Hard watchdog so CI can never hang. waitForFrame awaits the renderer's next
+// frame; if the scheduler reports "running" but stops emitting frames (seen
+// intermittently on Linux and Windows runners) that await never resolves and
+// maxPasses can't bound it. Turn a deadlock into a fast failure. The last
+// "ok  -" line printed before this fires shows which step was reached. Every
+// success/failure path below calls process.exit(), which cancels this timer.
+const SMOKE_TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS ?? 120_000);
+// unref so this never delays a legit fast failure (a maxPasses rejection); on a
+// real hang the renderer's own handles keep the loop alive, so it still fires.
+setTimeout(() => {
+  console.error(`\nFAIL: smoke timed out after ${SMOKE_TIMEOUT_MS}ms (render/waitForFrame deadlock).`);
+  process.exit(1);
+}, SMOKE_TIMEOUT_MS).unref();
+
 function assert(cond: boolean, msg: string): void {
   if (!cond) {
     console.error("FAIL:", msg);

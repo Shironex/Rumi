@@ -15,6 +15,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    # Cap the whole job well below the 6h default so a stuck step can't burn minutes.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -23,5 +25,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       # On Windows this also proves the OpenTUI win32 native module loads and the
-      # React tree mounts (testRender uses the real renderer in-memory).
+      # React tree mounts (testRender uses the real renderer in-memory). The
+      # step timeout is a backstop in case the in-script watchdog ever misses.
       - run: bun run smoke
+        timeout-minutes: 5
