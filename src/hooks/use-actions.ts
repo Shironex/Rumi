@@ -3,8 +3,7 @@ import type { CoolifyContext } from "../config.ts";
 import type { ActionId, LifecycleAction } from "../coolify/actions.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import type { CoolifyResource } from "../coolify/types.ts";
-
-const USE_MOCK = process.env.RUMI_MOCK === "1";
+import { USE_MOCK } from "../env.ts";
 
 export interface PendingAction {
   resource: CoolifyResource;

@@ -3,9 +3,10 @@ import type { CoolifyContext } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockDeployment } from "../coolify/mock.ts";
 import { type CoolifyResource, type Deployment, isTerminalStatus } from "../coolify/types.ts";
+import { USE_MOCK } from "../env.ts";
+import { isAbortError } from "../util.ts";
 
 const POLL_MS = 2500;
-const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface DeployLogsState {
   deployment: Deployment | null;
@@ -61,7 +62,7 @@ export function useDeployLogs(
         // Stop polling only once the deployment we're actually showing has settled.
         if (dep && isTerminalStatus(dep.status) && timer) clearInterval(timer);
       } catch (err) {
-        if (controller.signal.aborted || (err as Error).name === "AbortError") return;
+        if (isAbortError(err, controller.signal)) return;
         setState({ deployment: null, loading: false, error: (err as Error).message, supported: true });
       }
     };

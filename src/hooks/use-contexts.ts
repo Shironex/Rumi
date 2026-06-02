@@ -1,17 +1,26 @@
 import { useState } from "react";
 import { type CoolifyContext, loadContexts } from "../config.ts";
 import { mockContexts } from "../coolify/mock.ts";
+import { USE_MOCK } from "../env.ts";
 import { loadSettings, saveSettings } from "../settings.ts";
 import { clamp } from "../util.ts";
 
-const USE_MOCK = process.env.RUMI_MOCK === "1";
+interface LoadResult {
+  contexts: CoolifyContext[];
+  /** Set only when a config file exists but couldn't be read/parsed — not first-run. */
+  error: string | null;
+}
 
-function loadSafe(): CoolifyContext[] {
-  if (USE_MOCK) return mockContexts();
+function loadSafe(): LoadResult {
+  if (USE_MOCK) return { contexts: mockContexts(), error: null };
   try {
-    return loadContexts();
-  } catch {
-    return [];
+    return { contexts: loadContexts(), error: null };
+  } catch (err) {
+    // A missing file is the normal first-run → onboarding, no error. Any other
+    // failure means a config exists that we couldn't read; surface it instead of
+    // masquerading as "nothing configured".
+    if ((err as { code?: string }).code === "ENOENT") return { contexts: [], error: null };
+    return { contexts: [], error: (err as Error).message };
   }
 }
 
@@ -30,11 +39,14 @@ export interface ContextsApi {
   move: (step: number) => void;
   /** Pick a context by index and remember it for next launch. */
   select: (index: number) => void;
+  /** Set when a config file exists but couldn't be read — distinct from first-run. */
+  error: string | null;
 }
 
 /** Loads Coolify contexts once, tracks the active one, and persists the choice. */
 export function useContexts(): ContextsApi {
-  const list = useState(loadSafe)[0];
+  const initial = useState(loadSafe)[0];
+  const list = initial.contexts;
   const [activeIndex, setActiveIndex] = useState(() => initialIndex(list));
 
   const move = (step: number) =>
@@ -47,5 +59,5 @@ export function useContexts(): ContextsApi {
     if (chosen && !USE_MOCK) saveSettings({ activeContext: chosen.name });
   };
 
-  return { contexts: list, activeIndex, active: list[activeIndex], move, select };
+  return { contexts: list, activeIndex, active: list[activeIndex], move, select, error: initial.error };
 }

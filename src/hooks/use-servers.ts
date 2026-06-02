@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
-import type { CoolifyContext } from "../config.ts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { type CoolifyContext, NO_CONTEXT_MESSAGE } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockServers } from "../coolify/mock.ts";
 import type { CoolifyServer } from "../coolify/types.ts";
-import { clamp } from "../util.ts";
+import { USE_MOCK } from "../env.ts";
+import { clamp, isAbortError } from "../util.ts";
 
 const POLL_MS = 10000;
-const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface ServersApi {
   servers: CoolifyServer[];
   loading: boolean;
   error: string | null;
+  /** When the list last loaded, so the pane can show freshness like the resources view. */
+  lastUpdated: number | null;
   selected: number;
   selectedRow: CoolifyServer | undefined;
   move: (step: number) => void;
@@ -23,6 +25,7 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
   const [servers, setServers] = useState<CoolifyServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const load = useCallback(
@@ -30,7 +33,7 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
       if (!ctx) {
         setServers([]);
         setLoading(false);
-        setError("No Coolify context configured.");
+        setError(NO_CONTEXT_MESSAGE);
         return;
       }
       try {
@@ -39,8 +42,9 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
         setServers(list);
         setLoading(false);
         setError(null);
+        setLastUpdated(Date.now());
       } catch (err) {
-        if (signal?.aborted || (err as Error).name === "AbortError") return;
+        if (isAbortError(err, signal)) return;
         setLoading(false);
         setError((err as Error).message);
       }
@@ -48,9 +52,14 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
     [ctx],
   );
 
+  // See use-resources: refresh() rides the active controller's signal so a
+  // stale refresh can't overwrite the new context after a switch.
+  const ctrlRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
+    ctrlRef.current = controller;
     setLoading(true);
     setError(null);
     void load(controller.signal);
@@ -64,5 +73,14 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
   const selected = clamp(selectedIndex, 0, Math.max(0, servers.length - 1));
   const move = (step: number) => setSelectedIndex((i) => clamp(i + step, 0, Math.max(0, servers.length - 1)));
 
-  return { servers, loading, error, selected, selectedRow: servers[selected], move, refresh: () => void load() };
+  return {
+    servers,
+    loading,
+    error,
+    lastUpdated,
+    selected,
+    selectedRow: servers[selected],
+    move,
+    refresh: () => void load(ctrlRef.current?.signal),
+  };
 }

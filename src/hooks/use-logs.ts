@@ -3,10 +3,11 @@ import type { CoolifyContext } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockLogs } from "../coolify/mock.ts";
 import type { CoolifyResource } from "../coolify/types.ts";
+import { USE_MOCK } from "../env.ts";
+import { isAbortError } from "../util.ts";
 
-const LOG_POLL_MS = 3000;
+const POLL_MS = 3000;
 const LOG_LINES = 200;
-const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface LogsState {
   lines: string[];
@@ -47,12 +48,12 @@ export function useLogs(
         if (controller.signal.aborted) return;
         setState({ lines: text.split("\n"), loading: false, error: null, supported: true });
       } catch (err) {
-        if (controller.signal.aborted || (err as Error).name === "AbortError") return;
+        if (isAbortError(err, controller.signal)) return;
         setState({ lines: [], loading: false, error: (err as Error).message, supported: true });
       }
     };
     void load();
-    const timer = setInterval(load, LOG_POLL_MS);
+    const timer = setInterval(load, POLL_MS);
     return () => {
       controller.abort();
       clearInterval(timer);

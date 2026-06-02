@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
-import type { CoolifyContext } from "../config.ts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { type CoolifyContext, NO_CONTEXT_MESSAGE } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockResources } from "../coolify/mock.ts";
 import { type CoolifyResource, sortResources } from "../coolify/types.ts";
+import { USE_MOCK } from "../env.ts";
+import { isAbortError } from "../util.ts";
 
 const POLL_MS = 5000;
-const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface ResourcesState {
   resources: CoolifyResource[];
@@ -28,7 +29,7 @@ export function useResources(ctx: CoolifyContext | undefined): ResourcesState & 
   const load = useCallback(
     async (signal?: AbortSignal) => {
       if (!ctx) {
-        setState({ resources: [], loading: false, error: "No Coolify context configured.", lastUpdated: null });
+        setState({ resources: [], loading: false, error: NO_CONTEXT_MESSAGE, lastUpdated: null });
         return;
       }
       try {
@@ -36,15 +37,21 @@ export function useResources(ctx: CoolifyContext | undefined): ResourcesState & 
         if (signal?.aborted) return;
         setState({ resources: sortResources(resources), loading: false, error: null, lastUpdated: Date.now() });
       } catch (err) {
-        if (signal?.aborted || (err as Error).name === "AbortError") return;
+        if (isAbortError(err, signal)) return;
         setState((prev) => ({ ...prev, loading: false, error: (err as Error).message }));
       }
     },
     [ctx],
   );
 
+  // Shared with refresh() so a manual refresh rides the active context's signal:
+  // a context switch aborts this controller, so an in-flight refresh response is
+  // dropped instead of overwriting the new context's data.
+  const ctrlRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     const controller = new AbortController();
+    ctrlRef.current = controller;
     setState((prev) => ({ ...prev, loading: true, error: null }));
     void load(controller.signal);
     const timer = setInterval(() => void load(controller.signal), POLL_MS);
@@ -54,7 +61,7 @@ export function useResources(ctx: CoolifyContext | undefined): ResourcesState & 
     };
   }, [load]);
 
-  const refresh = useCallback(() => void load(), [load]);
+  const refresh = useCallback(() => void load(ctrlRef.current?.signal), [load]);
 
   return { ...state, refresh };
 }

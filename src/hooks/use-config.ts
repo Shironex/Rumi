@@ -3,8 +3,8 @@ import type { CoolifyContext } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockConfig, mockEnvVars } from "../coolify/mock.ts";
 import type { ConfigField, CoolifyResource, EnvVar } from "../coolify/types.ts";
-
-const USE_MOCK = process.env.RUMI_MOCK === "1";
+import { USE_MOCK } from "../env.ts";
+import { isAbortError } from "../util.ts";
 
 export interface ConfigState {
   config: ConfigField[];
@@ -65,7 +65,7 @@ export function useConfig(
           supported: true,
         });
       } catch (err) {
-        if (controller.signal.aborted || (err as Error).name === "AbortError") return;
+        if (isAbortError(err, controller.signal)) return;
         setState({ config: [], envs: [], valuesAvailable: false, loading: false, error: (err as Error).message, supported: true });
       }
     })();
