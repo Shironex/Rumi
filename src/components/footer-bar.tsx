@@ -30,7 +30,8 @@ export const FooterBar = memo(function FooterBar({ filterMode, filter, overlayKi
   } else if (view === "servers") {
     hints = "↑↓/jk move   R refresh   c context   tab resources   ? help   q quit";
   } else {
-    hints = "↑↓/jk move   / filter   l logs   L deploy   e config   s/r/d act   R refresh   c context   tab servers   ? help   q quit";
+    hints =
+      "↑↓/jk move   / filter   l logs   L deploy   e config   s/r/d act   R refresh   c context   tab servers   ? help   q quit";
   }
   return <text fg={colors.dim}>{hints}</text>;
 });

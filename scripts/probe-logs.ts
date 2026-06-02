@@ -34,7 +34,10 @@ for (const [kindPath, r] of samples) {
     continue;
   }
   console.log(`\n[${kindPath}] sample: ${String(r.name)} (${String(r.type)})`);
-  for (const path of [`/api/v1/${kindPath}/${String(r.uuid)}/logs?lines=20`, `/api/v1/${kindPath}/${String(r.uuid)}/logs`]) {
+  for (const path of [
+    `/api/v1/${kindPath}/${String(r.uuid)}/logs?lines=20`,
+    `/api/v1/${kindPath}/${String(r.uuid)}/logs`,
+  ]) {
     const res = await fetch(`${ctx.fqdn}${path}`, { headers });
     const text = await res.text();
     let shape = "text";

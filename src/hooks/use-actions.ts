@@ -60,7 +60,9 @@ export function useActions(ctx: CoolifyContext | undefined, onDone: OnDone): Act
         if (!USE_MOCK && ctx) {
           const client = new CoolifyClient(ctx);
           deploymentUuid =
-            id === "deploy" ? await client.deploy(resource.uuid) : await client.runAction(resource, id as LifecycleAction);
+            id === "deploy"
+              ? await client.deploy(resource.uuid)
+              : await client.runAction(resource, id as LifecycleAction);
         }
         setBusy(false);
         setPending(null);

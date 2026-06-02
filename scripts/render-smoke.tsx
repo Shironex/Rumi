@@ -82,7 +82,16 @@ t.renderer.destroy();
 // multi-keypress nav; the message path is the only thing under test here).
 const db = mockResources().find((r) => r.kind === "database")!;
 const u = await testRender(
-  <LogsPane resource={db} lines={[]} loading={false} error={null} supported={false} height={14} maxWidth={120} focused />,
+  <LogsPane
+    resource={db}
+    lines={[]}
+    loading={false}
+    error={null}
+    supported={false}
+    height={14}
+    maxWidth={120}
+    focused
+  />,
   { width: 140, height: 16 },
 );
 await u.waitForFrame((f) => f.includes("applications only"), { maxPasses: 200 });
@@ -105,7 +114,16 @@ empty.renderer.destroy();
 // An unreachable instance — the friendly CoolifyConnectionError message, not a raw fetch error.
 const connErr = new CoolifyConnectionError("shini", "https://shinictl.xyz", new Error("connect ECONNREFUSED"));
 const err = await testRender(
-  <LogsPane resource={app} lines={[]} loading={false} error={connErr.message} supported height={14} maxWidth={120} focused />,
+  <LogsPane
+    resource={app}
+    lines={[]}
+    loading={false}
+    error={connErr.message}
+    supported
+    height={14}
+    maxWidth={120}
+    focused
+  />,
   { width: 140, height: 16 },
 );
 await err.waitForFrame((f) => f.includes("Can't reach"), { maxPasses: 200 });
@@ -114,7 +132,16 @@ err.renderer.destroy();
 
 // An app that has never been deployed — distinct from "still waiting for a build".
 const nodep = await testRender(
-  <DeployLogsPane name="lunofi-api" deployment={null} loading={false} error={null} supported height={14} maxWidth={120} focused />,
+  <DeployLogsPane
+    name="lunofi-api"
+    deployment={null}
+    loading={false}
+    error={null}
+    supported
+    height={14}
+    maxWidth={120}
+    focused
+  />,
   { width: 140, height: 16 },
 );
 await nodep.waitForFrame((f) => f.includes("No deployments yet"), { maxPasses: 200 });
@@ -124,11 +151,26 @@ nodep.renderer.destroy();
 // Env values present but the token can't read them (no read:sensitive) — the
 // config pane calls that out instead of looking like a rumi bug.
 const noscope = await testRender(
-  <ConfigPane name="lunofi-api" config={[]} envs={mockEnvVars()} valuesAvailable={false} reveal={false} loading={false} error={null} supported height={18} maxWidth={120} focused />,
+  <ConfigPane
+    name="lunofi-api"
+    config={[]}
+    envs={mockEnvVars()}
+    valuesAvailable={false}
+    reveal={false}
+    loading={false}
+    error={null}
+    supported
+    height={18}
+    maxWidth={120}
+    focused
+  />,
   { width: 140, height: 20 },
 );
 await noscope.waitForFrame((f) => f.includes("read:sensitive"), { maxPasses: 200 });
-assert(noscope.captureCharFrame().includes("token lacks read:sensitive"), "config pane flags a token without the read:sensitive scope");
+assert(
+  noscope.captureCharFrame().includes("token lacks read:sensitive"),
+  "config pane flags a token without the read:sensitive scope",
+);
 noscope.renderer.destroy();
 
 // Action confirm modal - fresh App so selection is the first app (lunofi-api).
@@ -204,7 +246,11 @@ sp.renderer.destroy();
 // Splash error state - the first-load unreachable case surfaces here (data never
 // lands, so the splash stays up); it must show the actionable message, not spin.
 const spErr = await testRender(
-  <Splash contextName="shini" error={'Can\'t reach "shini" (https://shinictl.xyz). Check the instance is online and the URL is correct.'} spinner="⠋" />,
+  <Splash
+    contextName="shini"
+    error={'Can\'t reach "shini" (https://shinictl.xyz). Check the instance is online and the URL is correct.'}
+    spinner="⠋"
+  />,
   { width: 90, height: 48 },
 );
 await spErr.waitForFrame((f) => f.includes("Can't reach"), { maxPasses: 200 });
@@ -233,7 +279,12 @@ s.renderer.destroy();
 // uses (toServer once read only the top level, so every server showed red
 // "unreachable"). Map a raw server with nested settings and assert the pane
 // renders it ready — exercises the real toServer->ServersPane path the mock skips.
-const nested = toServer({ uuid: "srv-n", name: "nested-host", ip: "9.9.9.9", settings: { is_reachable: true, is_usable: true } });
+const nested = toServer({
+  uuid: "srv-n",
+  name: "nested-host",
+  ip: "9.9.9.9",
+  settings: { is_reachable: true, is_usable: true },
+});
 const sv = await testRender(
   <ServersPane servers={[nested]} selectedIndex={0} loading={false} error={null} viewportHeight={10} />,
   { width: 140, height: 16 },
@@ -247,15 +298,33 @@ sv.renderer.destroy();
 // A transient poll error must NOT blank a table that already has rows — the hook
 // keeps last-good data, so the pane should keep rendering it (S4).
 const rErr = await testRender(
-  <ResourcesTable resources={mockResources()} total={7} filter="" selectedIndex={0} focused viewportHeight={10} loading={false} error="Coolify API error 500" />,
+  <ResourcesTable
+    resources={mockResources()}
+    total={7}
+    filter=""
+    selectedIndex={0}
+    focused
+    viewportHeight={10}
+    loading={false}
+    error="Coolify API error 500"
+  />,
   { width: 140, height: 16 },
 );
 await rErr.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 200 });
-assert(rErr.captureCharFrame().includes("lunofi-api"), "resources table keeps last-good rows on a transient poll error (S4)");
+assert(
+  rErr.captureCharFrame().includes("lunofi-api"),
+  "resources table keeps last-good rows on a transient poll error (S4)",
+);
 rErr.renderer.destroy();
 
 const svErr = await testRender(
-  <ServersPane servers={[nested]} selectedIndex={0} loading={false} error="Coolify API error 500" viewportHeight={10} />,
+  <ServersPane
+    servers={[nested]}
+    selectedIndex={0}
+    loading={false}
+    error="Coolify API error 500"
+    viewportHeight={10}
+  />,
   { width: 140, height: 16 },
 );
 await svErr.waitForFrame((f) => f.includes("nested-host"), { maxPasses: 200 });
@@ -266,7 +335,14 @@ svErr.renderer.destroy();
 
 // Servers view shows a last-updated timestamp in its title (parity with resources) (N5).
 const svFresh = await testRender(
-  <ServersPane servers={[nested]} selectedIndex={0} loading={false} error={null} viewportHeight={10} lastUpdated={1733155822000} />,
+  <ServersPane
+    servers={[nested]}
+    selectedIndex={0}
+    loading={false}
+    error={null}
+    viewportHeight={10}
+    lastUpdated={1733155822000}
+  />,
   { width: 140, height: 16 },
 );
 await svFresh.waitForFrame((f) => f.includes("nested-host"), { maxPasses: 200 });

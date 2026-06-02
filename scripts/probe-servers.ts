@@ -30,7 +30,12 @@ if (Array.isArray(json)) {
     console.log("  top-level keys:", Object.keys(arr[0]).sort().join(", "));
     const settings = arr[0].settings;
     if (settings && typeof settings === "object") {
-      console.log("  settings keys:", Object.keys(settings as object).sort().join(", "));
+      console.log(
+        "  settings keys:",
+        Object.keys(settings as object)
+          .sort()
+          .join(", "),
+      );
     }
   }
   for (const s of arr) {

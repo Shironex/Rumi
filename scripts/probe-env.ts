@@ -52,7 +52,13 @@ if (app) {
           console.log(`    ${k}: ${isSecretish ? redact(e[k]) : JSON.stringify(e[k])}`);
         }
       }
-      console.log("  keys present:", arr.map((e) => String(e.key)).slice(0, 30).join(", "));
+      console.log(
+        "  keys present:",
+        arr
+          .map((e) => String(e.key))
+          .slice(0, 30)
+          .join(", "),
+      );
     } else {
       console.log("  body:", JSON.stringify(r.json ?? r).slice(0, 200));
     }
@@ -70,7 +76,13 @@ if (svc) {
   if (Array.isArray(arr)) {
     console.log(`  array[${arr.length}]`);
     if (arr[0]) console.log("  entry keys:", Object.keys(arr[0]).sort().join(", "));
-    console.log("  keys present:", arr.map((e) => String(e.key)).slice(0, 30).join(", "));
+    console.log(
+      "  keys present:",
+      arr
+        .map((e) => String(e.key))
+        .slice(0, 30)
+        .join(", "),
+    );
   } else {
     console.log("  body:", JSON.stringify(r.json ?? r).slice(0, 200));
   }

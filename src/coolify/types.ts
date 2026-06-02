@@ -128,17 +128,7 @@ export interface CoolifyServer {
   buildServer: boolean;
 }
 
-const DB_HINTS = [
-  "postgres",
-  "mysql",
-  "mariadb",
-  "mongo",
-  "redis",
-  "keydb",
-  "dragonfly",
-  "clickhouse",
-  "database",
-];
+const DB_HINTS = ["postgres", "mysql", "mariadb", "mongo", "redis", "keydb", "dragonfly", "clickhouse", "database"];
 
 export function normalizeKind(rawType: string): ResourceKind {
   const t = rawType.toLowerCase();

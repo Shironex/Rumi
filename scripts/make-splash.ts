@@ -33,8 +33,16 @@ const RAMP = " .:-=+*#%@";
 
 function dimensions(path: string): { w: number; h: number } {
   const probe = spawnSync([
-    "ffprobe", "-v", "error", "-select_streams", "v:0",
-    "-show_entries", "stream=width,height", "-of", "csv=p=0", path,
+    "ffprobe",
+    "-v",
+    "error",
+    "-select_streams",
+    "v:0",
+    "-show_entries",
+    "stream=width,height",
+    "-of",
+    "csv=p=0",
+    path,
   ]);
   const out = probe.stdout.toString().trim();
   const [w, h] = out.split(",").map(Number);
@@ -48,8 +56,18 @@ function dimensions(path: string): { w: number; h: number } {
 function rawGray(path: string, cols: number, rows: number): Uint8Array {
   const eq = `eq=contrast=${contrast}:brightness=${brightness}:gamma=${gamma}`;
   const ff = spawnSync([
-    "ffmpeg", "-v", "error", "-i", path,
-    "-vf", `scale=${cols}:${rows},${eq}`, "-pix_fmt", "gray", "-f", "rawvideo", "-",
+    "ffmpeg",
+    "-v",
+    "error",
+    "-i",
+    path,
+    "-vf",
+    `scale=${cols}:${rows},${eq}`,
+    "-pix_fmt",
+    "gray",
+    "-f",
+    "rawvideo",
+    "-",
   ]);
   if (!ff.success) {
     console.error("ffmpeg failed:", ff.stderr.toString());

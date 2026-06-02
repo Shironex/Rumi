@@ -17,7 +17,14 @@ export interface ConfigState {
   supported: boolean;
 }
 
-const IDLE: ConfigState = { config: [], envs: [], valuesAvailable: false, loading: false, error: null, supported: true };
+const IDLE: ConfigState = {
+  config: [],
+  envs: [],
+  valuesAvailable: false,
+  loading: false,
+  error: null,
+  supported: true,
+};
 
 /**
  * Loads a resource's curated config + env vars once per open (these change rarely,
@@ -41,7 +48,14 @@ export function useConfig(
       return;
     }
     if (USE_MOCK) {
-      setState({ config: mockConfig(), envs: mockEnvVars(), valuesAvailable: true, loading: false, error: null, supported: true });
+      setState({
+        config: mockConfig(),
+        envs: mockEnvVars(),
+        valuesAvailable: true,
+        loading: false,
+        error: null,
+        supported: true,
+      });
       return;
     }
 
@@ -66,7 +80,14 @@ export function useConfig(
         });
       } catch (err) {
         if (isAbortError(err, controller.signal)) return;
-        setState({ config: [], envs: [], valuesAvailable: false, loading: false, error: (err as Error).message, supported: true });
+        setState({
+          config: [],
+          envs: [],
+          valuesAvailable: false,
+          loading: false,
+          error: (err as Error).message,
+          supported: true,
+        });
       }
     })();
 

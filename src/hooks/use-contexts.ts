@@ -29,7 +29,10 @@ function initialIndex(list: CoolifyContext[]): number {
   const savedName = loadSettings().activeContext;
   const savedIdx = savedName ? list.findIndex((c) => c.name === savedName) : -1;
   if (savedIdx >= 0) return savedIdx;
-  return Math.max(0, list.findIndex((c) => c.default));
+  return Math.max(
+    0,
+    list.findIndex((c) => c.default),
+  );
 }
 
 export interface ContextsApi {
@@ -49,8 +52,7 @@ export function useContexts(): ContextsApi {
   const list = initial.contexts;
   const [activeIndex, setActiveIndex] = useState(() => initialIndex(list));
 
-  const move = (step: number) =>
-    setActiveIndex((i) => clamp(i + step, 0, Math.max(0, list.length - 1)));
+  const move = (step: number) => setActiveIndex((i) => clamp(i + step, 0, Math.max(0, list.length - 1)));
 
   const select = (index: number) => {
     const i = clamp(index, 0, Math.max(0, list.length - 1));

@@ -57,7 +57,9 @@ export function ServersPane({ servers, selectedIndex, loading, error, lastUpdate
             <box key={s.uuid || s.name} flexDirection="row" backgroundColor={selected ? colors.selectedBg : undefined}>
               <text fg={selected ? colors.selectedFg : colors.text}>{label}</text>
               <text fg={healthColor(s)}>●</text>
-              <text fg={selected ? colors.selectedFg : colors.dim}>{" " + healthLabel(s) + (tags ? "  " + tags : "")}</text>
+              <text fg={selected ? colors.selectedFg : colors.dim}>
+                {" " + healthLabel(s) + (tags ? "  " + tags : "")}
+              </text>
             </box>
           );
         })}

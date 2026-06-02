@@ -109,7 +109,9 @@ export class CoolifyResponseError extends Error {
     readonly contextName: string,
     readonly fqdn: string,
   ) {
-    super(`"${contextName}" (${fqdn}) didn't return Coolify API data. Make sure the URL points at your instance, not a proxy or login page.`);
+    super(
+      `"${contextName}" (${fqdn}) didn't return Coolify API data. Make sure the URL points at your instance, not a proxy or login page.`,
+    );
     this.name = "CoolifyResponseError";
   }
 }
@@ -127,7 +129,11 @@ export class CoolifyClient {
    * response into a {@link CoolifyApiError}, so every caller surfaces consistent,
    * actionable messages instead of raw runtime errors.
    */
-  private async request(path: string, init: RequestInit | undefined, signal: AbortSignal | undefined): Promise<Response> {
+  private async request(
+    path: string,
+    init: RequestInit | undefined,
+    signal: AbortSignal | undefined,
+  ): Promise<Response> {
     let res: Response;
     try {
       res = await fetch(`${this.ctx.fqdn}${path}`, { ...init, headers: this.headers(), signal });
@@ -174,7 +180,11 @@ export class CoolifyClient {
    * start / stop / restart a resource (Coolify accepts POST). Returns the
    * deployment_uuid when the action queued a build (app start/restart), else undefined.
    */
-  async runAction(resource: CoolifyResource, action: LifecycleAction, signal?: AbortSignal): Promise<string | undefined> {
+  async runAction(
+    resource: CoolifyResource,
+    action: LifecycleAction,
+    signal?: AbortSignal,
+  ): Promise<string | undefined> {
     const segment = actionSegment(resource.kind);
     if (!segment) throw new Error(`No lifecycle endpoint for a ${resource.kind} resource.`);
     const body = await this.post(`/api/v1/${segment}/${resource.uuid}/${action}`, signal);

@@ -22,7 +22,7 @@ export function Onboarding({ configError }: Props = {}) {
         <text> </text>
         <text fg={colors.dim}>{configError}</text>
         <text> </text>
-        <text fg={colors.dim}>Fix the file (it must be valid JSON) or run:  coolify login    ·    q to quit</text>
+        <text fg={colors.dim}>Fix the file (it must be valid JSON) or run: coolify login · q to quit</text>
       </box>
     );
   }
@@ -39,7 +39,7 @@ export function Onboarding({ configError }: Props = {}) {
       <text> </text>
       <text fg={colors.dim}>{EXAMPLE}</text>
       <text> </text>
-      <text fg={colors.dim}>or run:  coolify login    ·    q to quit</text>
+      <text fg={colors.dim}>or run: coolify login · q to quit</text>
     </box>
   );
 }

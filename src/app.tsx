@@ -45,14 +45,22 @@ export function App() {
   const servers = useServers(contexts.active, view === "servers");
   const [overlay, setOverlay] = useState<Overlay | null>(null);
   const overlayOpen = overlay !== null;
-  const logs = useLogs(contexts.active, overlay?.kind === "runtime" ? overlay.resource : undefined, overlay?.kind === "runtime");
+  const logs = useLogs(
+    contexts.active,
+    overlay?.kind === "runtime" ? overlay.resource : undefined,
+    overlay?.kind === "runtime",
+  );
   const deployLogs = useDeployLogs(
     contexts.active,
     overlay?.kind === "deploy" ? overlay.resource : undefined,
     overlay?.kind === "deploy" ? overlay.trackUuid : undefined,
     overlay?.kind === "deploy",
   );
-  const config = useConfig(contexts.active, overlay?.kind === "config" ? overlay.resource : undefined, overlay?.kind === "config");
+  const config = useConfig(
+    contexts.active,
+    overlay?.kind === "config" ? overlay.resource : undefined,
+    overlay?.kind === "config",
+  );
   const [revealEnv, setRevealEnv] = useState(false);
   const toast = useToast();
   const actions = useActions(contexts.active, (resource, id, deploymentUuid) => {

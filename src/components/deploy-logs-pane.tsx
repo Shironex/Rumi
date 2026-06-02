@@ -31,7 +31,18 @@ function lineColor(type: DeployLogType): string {
   return colors.text;
 }
 
-export function DeployLogsPane({ name, deployment, loading, error, supported, height, maxWidth, focused, scrollRef, spinner }: Props) {
+export function DeployLogsPane({
+  name,
+  deployment,
+  loading,
+  error,
+  supported,
+  height,
+  maxWidth,
+  focused,
+  scrollRef,
+  spinner,
+}: Props) {
   let body: ReactNode;
   if (!supported) {
     body = <text fg={colors.dim}>Deploy logs are available for applications only.</text>;

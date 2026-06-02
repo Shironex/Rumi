@@ -28,10 +28,15 @@ function Row({ label, value, valueColor }: { label: string; value?: string; valu
 
 // Memoized: `resource` is a stable reference across spinner ticks (the filtered
 // list only recomputes on data/filter change), so the detail pane skips them.
-export const DetailPane = memo(function DetailPane({ resource, focused }: { resource?: CoolifyResource; focused: boolean }) {
+export const DetailPane = memo(function DetailPane({
+  resource,
+  focused,
+}: {
+  resource?: CoolifyResource;
+  focused: boolean;
+}) {
   const branch = resource?.meta.gitBranch
-    ? resource.meta.gitBranch +
-      (resource.meta.gitCommitSha ? ` @ ${resource.meta.gitCommitSha.slice(0, 7)}` : "")
+    ? resource.meta.gitBranch + (resource.meta.gitCommitSha ? ` @ ${resource.meta.gitCommitSha.slice(0, 7)}` : "")
     : undefined;
 
   return (

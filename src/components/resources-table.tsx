@@ -28,18 +28,23 @@ function pad(value: string, width: number): string {
 
 /** Slice the list to a window that always keeps the selected row visible. */
 function windowFor(total: number, selected: number, rows: number): { start: number; end: number } {
-  const start = Math.min(
-    Math.max(0, selected - Math.floor(rows / 2)),
-    Math.max(0, total - rows),
-  );
+  const start = Math.min(Math.max(0, selected - Math.floor(rows / 2)), Math.max(0, total - rows));
   return { start, end: start + rows };
 }
 
-export function ResourcesTable({ resources, total, filter, selectedIndex, focused, viewportHeight, loading, error, spinner }: Props) {
+export function ResourcesTable({
+  resources,
+  total,
+  filter,
+  selectedIndex,
+  focused,
+  viewportHeight,
+  loading,
+  error,
+  spinner,
+}: Props) {
   const borderColor = focused ? colors.accent : colors.border;
-  const title = filter
-    ? ` resources (${resources.length}/${total})  /${filter} `
-    : ` resources (${total}) `;
+  const title = filter ? ` resources (${resources.length}/${total})  /${filter} ` : ` resources (${total}) `;
 
   let body: ReactNode;
   // Only blank the table for an error when there's nothing to show; on a transient
@@ -61,11 +66,7 @@ export function ResourcesTable({ resources, total, filter, selectedIndex, focuse
           const selected = start + i === selectedIndex;
           const label = (selected ? "▸ " : "  ") + pad(r.name, NAME_WIDTH) + pad(shortKind(r.kind), KIND_WIDTH);
           return (
-            <box
-              key={r.uuid || r.name}
-              flexDirection="row"
-              backgroundColor={selected ? colors.selectedBg : undefined}
-            >
+            <box key={r.uuid || r.name} flexDirection="row" backgroundColor={selected ? colors.selectedBg : undefined}>
               <text fg={selected ? colors.selectedFg : colors.text}>{label}</text>
               <StatusDot state={r.state} spinner={spinner} />
               <text fg={selected ? colors.selectedFg : colors.dim}>{" " + r.status}</text>
@@ -77,7 +78,15 @@ export function ResourcesTable({ resources, total, filter, selectedIndex, focuse
   }
 
   return (
-    <box title={title} border borderColor={borderColor} flexGrow={1} flexDirection="column" paddingLeft={1} paddingRight={1}>
+    <box
+      title={title}
+      border
+      borderColor={borderColor}
+      flexGrow={1}
+      flexDirection="column"
+      paddingLeft={1}
+      paddingRight={1}
+    >
       {body}
     </box>
   );

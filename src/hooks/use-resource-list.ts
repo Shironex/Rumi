@@ -43,8 +43,7 @@ export function useResourceList(ctx: CoolifyContext | undefined): ResourceListAp
 
   const selected = clamp(selectedIndex, 0, Math.max(0, filtered.length - 1));
 
-  const move = (step: number) =>
-    setSelectedIndex((i) => clamp(i + step, 0, Math.max(0, filtered.length - 1)));
+  const move = (step: number) => setSelectedIndex((i) => clamp(i + step, 0, Math.max(0, filtered.length - 1)));
 
   const handleFilterKey = (e: KeyEvent) => {
     if (e.name === "escape") {

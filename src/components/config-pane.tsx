@@ -27,7 +27,20 @@ function truncate(text: string, width: number): string {
   return text.length > width ? text.slice(0, Math.max(1, width - 1)) + "…" : text;
 }
 
-export function ConfigPane({ name, config, envs, valuesAvailable, reveal, loading, error, supported, height, maxWidth, focused, scrollRef }: Props) {
+export function ConfigPane({
+  name,
+  config,
+  envs,
+  valuesAvailable,
+  reveal,
+  loading,
+  error,
+  supported,
+  height,
+  maxWidth,
+  focused,
+  scrollRef,
+}: Props) {
   let body: ReactNode;
 
   if (!supported) {

@@ -59,7 +59,15 @@ export function mockDeployment(): Deployment {
 
 /** Sample env vars (with values, so the mask/reveal toggle is exercised offline). */
 export function mockEnvVars(): EnvVar[] {
-  const base = { buildtime: false, runtime: true, required: false, shared: false, preview: false, multiline: false, managed: false };
+  const base = {
+    buildtime: false,
+    runtime: true,
+    required: false,
+    shared: false,
+    preview: false,
+    multiline: false,
+    managed: false,
+  };
   return [
     { ...base, key: "DATABASE_URL", value: "postgres://app:s3cr3t@db:5432/app", buildtime: true, required: true },
     { ...base, key: "NODE_ENV", value: "production", buildtime: true },
@@ -86,9 +94,34 @@ export function mockConfig(): ConfigField[] {
 /** Sample servers for offline UI work. */
 export function mockServers(): CoolifyServer[] {
   return [
-    { uuid: "srv-0", name: "production-main", ip: "193.70.35.124", description: "primary host", reachable: true, usable: true, isCoolifyHost: true, buildServer: false },
-    { uuid: "srv-1", name: "production-alt", ip: "51.83.100.121", reachable: true, usable: true, isCoolifyHost: false, buildServer: true },
-    { uuid: "srv-2", name: "edge-cdn", ip: "10.0.0.9", reachable: false, usable: false, isCoolifyHost: false, buildServer: false },
+    {
+      uuid: "srv-0",
+      name: "production-main",
+      ip: "193.70.35.124",
+      description: "primary host",
+      reachable: true,
+      usable: true,
+      isCoolifyHost: true,
+      buildServer: false,
+    },
+    {
+      uuid: "srv-1",
+      name: "production-alt",
+      ip: "51.83.100.121",
+      reachable: true,
+      usable: true,
+      isCoolifyHost: false,
+      buildServer: true,
+    },
+    {
+      uuid: "srv-2",
+      name: "edge-cdn",
+      ip: "10.0.0.9",
+      reachable: false,
+      usable: false,
+      isCoolifyHost: false,
+      buildServer: false,
+    },
   ];
 }
 
