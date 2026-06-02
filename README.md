@@ -25,6 +25,8 @@ Think `k9s`, but for your Coolify apps, services, and databases.
   &nbsp;·&nbsp;
   <a href="#keys">Keys</a>
   &nbsp;·&nbsp;
+  <a href="ROADMAP.md">Roadmap</a>
+  &nbsp;·&nbsp;
   <a href="#build-from-source">Build</a>
 </p>
 
@@ -116,6 +118,10 @@ bun build --compile ./src/index.tsx --outfile rumi   # standalone binary
 ```
 
 The splash art is generated from an image with `bun run scripts/make-splash.ts <image> --write` (needs `ffmpeg`).
+
+## Roadmap
+
+rumi is early and moving fast. See [ROADMAP.md](ROADMAP.md) for what is shipped and what is next.
 
 ## License
 
