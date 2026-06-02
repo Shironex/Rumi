@@ -7,6 +7,7 @@
 import { testRender } from "@opentui/react/test-utils";
 import { App } from "../src/app.tsx";
 import { LogsPane } from "../src/components/logs-pane.tsx";
+import { Onboarding } from "../src/components/onboarding.tsx";
 import { mockResources } from "../src/coolify/mock.ts";
 
 if (process.env.KANRISHA_MOCK !== "1") {
@@ -27,7 +28,7 @@ await t.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 const frame = t.captureCharFrame();
 
 assert(frame.includes("kanrisha"), "header renders");
-assert(frame.includes("contexts"), "contexts pane renders");
+assert(frame.includes("c context"), "context-switch hint in footer");
 assert(frame.includes("shini"), "configured context shows");
 assert(frame.includes("resources"), "resources pane renders");
 assert(frame.includes("lunofi-api"), "resource row renders");
@@ -60,6 +61,18 @@ await a.waitForFrame((f) => f.includes("Restart this resource?"), { maxPasses: 3
 const confirmFrame = a.captureCharFrame();
 assert(confirmFrame.includes("Restart this resource?"), "restart key opens the confirm modal");
 assert(confirmFrame.includes("y confirm"), "confirm modal shows the y/n prompt");
+
+// Context switcher modal — fresh App, real contexts loaded from the CLI config.
+const b = await testRender(<App />, { width: 160, height: 40 });
+await b.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+b.mockInput.pressKey("c");
+await b.waitForFrame((f) => f.includes("switch context"), { maxPasses: 300 });
+assert(b.captureCharFrame().includes("switch context"), "c opens the context switcher");
+
+// Onboarding empty state — rendered standalone (only paints at 0 contexts).
+const o = await testRender(<Onboarding />, { width: 100, height: 16 });
+await o.waitForFrame((f) => f.includes("Welcome to kanrisha"), { maxPasses: 200 });
+assert(o.captureCharFrame().includes("No Coolify instance is configured"), "onboarding empty state renders");
 
 console.log("\nrender smoke passed.\n");
 console.log(appLogs);
