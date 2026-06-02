@@ -1,3 +1,4 @@
+import type { CoolifyContext } from "../config.ts";
 import {
   type ConfigField,
   type CoolifyResource,
@@ -7,6 +8,11 @@ import {
   normalizeKind,
   parseState,
 } from "./types.ts";
+
+/** A sample context so offline/CI runs don't depend on a real Coolify config file. */
+export function mockContexts(): CoolifyContext[] {
+  return [{ name: "shini", fqdn: "https://shinictl.xyz", token: "mock-token", default: true }];
+}
 
 const SAMPLES: ReadonlyArray<readonly [name: string, rawType: string, status: string]> = [
   ["lunofi-api", "application", "running:healthy"],

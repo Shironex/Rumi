@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { type CoolifyContext, loadContexts } from "../config.ts";
+import { mockContexts } from "../coolify/mock.ts";
 import { loadSettings, saveSettings } from "../settings.ts";
 import { clamp } from "../util.ts";
 
 const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 function loadSafe(): CoolifyContext[] {
+  if (USE_MOCK) return mockContexts();
   try {
     return loadContexts();
   } catch {
