@@ -1,4 +1,5 @@
 import type { CoolifyContext } from "../config.ts";
+import { actionSegment, type LifecycleAction } from "./actions.ts";
 import { type CoolifyResource, normalizeKind, parseState } from "./types.ts";
 
 interface RawResource {
@@ -62,6 +63,23 @@ export class CoolifyClient {
     if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
     const data = (await res.json()) as { logs?: string };
     return data.logs ?? "";
+  }
+
+  /** start / stop / restart a resource. Coolify accepts POST (and GET) on these. */
+  async runAction(resource: CoolifyResource, action: LifecycleAction, signal?: AbortSignal): Promise<void> {
+    const segment = actionSegment(resource.kind);
+    if (!segment) throw new Error(`No lifecycle endpoint for a ${resource.kind} resource.`);
+    await this.post(`/api/v1/${segment}/${resource.uuid}/${action}`, signal);
+  }
+
+  /** Trigger a (re)deploy by uuid. force=false reuses the build cache where possible. */
+  async deploy(uuid: string, signal?: AbortSignal): Promise<void> {
+    await this.post(`/api/v1/deploy?uuid=${encodeURIComponent(uuid)}&force=false`, signal);
+  }
+
+  private async post(path: string, signal?: AbortSignal): Promise<void> {
+    const res = await fetch(`${this.ctx.fqdn}${path}`, { method: "POST", headers: this.headers(), signal });
+    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
   }
 }
 
