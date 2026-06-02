@@ -6,10 +6,13 @@
  */
 import { testRender } from "@opentui/react/test-utils";
 import { App } from "../src/app.tsx";
+import { ConfigPane } from "../src/components/config-pane.tsx";
+import { DeployLogsPane } from "../src/components/deploy-logs-pane.tsx";
 import { LogsPane } from "../src/components/logs-pane.tsx";
 import { Onboarding } from "../src/components/onboarding.tsx";
 import { Splash } from "../src/components/splash.tsx";
-import { mockResources } from "../src/coolify/mock.ts";
+import { CoolifyConnectionError } from "../src/coolify/client.ts";
+import { mockEnvVars, mockResources } from "../src/coolify/mock.ts";
 
 if (process.env.RUMI_MOCK !== "1") {
   console.error("Run with RUMI_MOCK=1 so it uses sample data, not the live API.");
@@ -84,6 +87,48 @@ await u.waitForFrame((f) => f.includes("applications only"), { maxPasses: 200 })
 assert(u.captureCharFrame().includes("applications only"), "unsupported logs message for database");
 u.renderer.destroy();
 
+// Empty/error states the mock never exercises (mock always returns content), so
+// render the panes standalone like the unsupported case above.
+const app = mockResources().find((r) => r.kind === "application")!;
+
+// A running app that simply hasn't logged anything (Coolify returns "").
+const empty = await testRender(
+  <LogsPane resource={app} lines={[""]} loading={false} error={null} supported height={14} maxWidth={120} focused />,
+  { width: 140, height: 16 },
+);
+await empty.waitForFrame((f) => f.includes("No log output yet"), { maxPasses: 200 });
+assert(empty.captureCharFrame().includes("No log output yet"), "logs pane shows a no-output empty state");
+empty.renderer.destroy();
+
+// An unreachable instance — the friendly CoolifyConnectionError message, not a raw fetch error.
+const connErr = new CoolifyConnectionError("shini", "https://shinictl.xyz", new Error("connect ECONNREFUSED"));
+const err = await testRender(
+  <LogsPane resource={app} lines={[]} loading={false} error={connErr.message} supported height={14} maxWidth={120} focused />,
+  { width: 140, height: 16 },
+);
+await err.waitForFrame((f) => f.includes("Can't reach"), { maxPasses: 200 });
+assert(err.captureCharFrame().includes("Can't reach"), "panes render the friendly unreachable-context message");
+err.renderer.destroy();
+
+// An app that has never been deployed — distinct from "still waiting for a build".
+const nodep = await testRender(
+  <DeployLogsPane name="lunofi-api" deployment={null} loading={false} error={null} supported height={14} maxWidth={120} focused />,
+  { width: 140, height: 16 },
+);
+await nodep.waitForFrame((f) => f.includes("No deployments yet"), { maxPasses: 200 });
+assert(nodep.captureCharFrame().includes("No deployments yet"), "deploy pane shows a never-deployed empty state");
+nodep.renderer.destroy();
+
+// Env values present but the token can't read them (no read:sensitive) — the
+// config pane calls that out instead of looking like a rumi bug.
+const noscope = await testRender(
+  <ConfigPane name="lunofi-api" config={[]} envs={mockEnvVars()} valuesAvailable={false} reveal={false} loading={false} error={null} supported height={18} maxWidth={120} focused />,
+  { width: 140, height: 20 },
+);
+await noscope.waitForFrame((f) => f.includes("read:sensitive"), { maxPasses: 200 });
+assert(noscope.captureCharFrame().includes("token lacks read:sensitive"), "config pane flags a token without the read:sensitive scope");
+noscope.renderer.destroy();
+
 // Action confirm modal - fresh App so selection is the first app (lunofi-api).
 const a = await testRender(<App />, { width: 160, height: 40 });
 await a.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
@@ -153,6 +198,18 @@ assert(splashFrame.includes("@@@"), "splash ascii art renders");
 assert(splashFrame.includes("k9s-style control for Coolify"), "splash tagline renders");
 assert(splashFrame.includes("press any key to skip"), "splash skip hint renders");
 sp.renderer.destroy();
+
+// Splash error state - the first-load unreachable case surfaces here (data never
+// lands, so the splash stays up); it must show the actionable message, not spin.
+const spErr = await testRender(
+  <Splash contextName="shini" error={'Can\'t reach "shini" (https://shinictl.xyz). Check the instance is online and the URL is correct.'} spinner="⠋" />,
+  { width: 90, height: 48 },
+);
+await spErr.waitForFrame((f) => f.includes("Can't reach"), { maxPasses: 200 });
+const spErrFrame = spErr.captureCharFrame();
+assert(spErrFrame.includes("Can't reach"), "splash surfaces the unreachable-context message");
+assert(spErrFrame.includes("press any key to continue"), "splash error swaps the skip hint for continue");
+spErr.renderer.destroy();
 
 // Onboarding empty state - rendered standalone (only paints at 0 contexts).
 const o = await testRender(<Onboarding />, { width: 100, height: 16 });

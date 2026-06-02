@@ -37,8 +37,11 @@ export function DeployLogsPane({ name, deployment, loading, error, supported, he
     body = <text fg={colors.dim}>Deploy logs are available for applications only.</text>;
   } else if (error) {
     body = <text fg={colors.stopped}>{error}</text>;
-  } else if (!deployment || (loading && deployment.lines.length === 0)) {
+  } else if (loading && !deployment) {
     body = <text fg={colors.dim}>Waiting for the build…</text>;
+  } else if (!deployment) {
+    // Loaded, but this app has never been deployed — distinct from still-waiting.
+    body = <text fg={colors.dim}>No deployments yet.</text>;
   } else {
     const visible = deployment.lines.filter((l) => !l.hidden);
     if (visible.length === 0) {

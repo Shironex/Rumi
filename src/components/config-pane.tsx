@@ -39,18 +39,21 @@ export function ConfigPane({ name, config, envs, valuesAvailable, reveal, loadin
   } else {
     const keyCol = Math.min(28, Math.max(10, ...envs.map((e) => e.key.length + 2), 10));
     const valCol = Math.max(8, Math.min(44, maxWidth - keyCol - 24));
-    const envNote =
-      envs.length === 0
-        ? ""
-        : valuesAvailable
-          ? reveal
-            ? "· v hide values"
-            : "· v reveal values"
-          : "· values hidden (token lacks read:sensitive)";
+    // A token without read:sensitive returns env keys but no values. Call that out
+    // in a warning colour — it's why `v` reveals nothing, not a rumi bug.
+    const scopeHidden = envs.length > 0 && !valuesAvailable;
+    const revealHint = envs.length === 0 || !valuesAvailable ? "" : reveal ? "· v hide values" : "· v reveal values";
 
     body = (
       <scrollbox ref={scrollRef} stickyScroll={false} height={Math.max(1, height - 2)}>
-        <text fg={colors.dim}>{`environment (${envs.length}) ${envNote}`}</text>
+        <box flexDirection="row">
+          <text fg={colors.dim}>{`environment (${envs.length}) `}</text>
+          {scopeHidden ? (
+            <text fg={colors.degraded}>· values hidden (token lacks read:sensitive)</text>
+          ) : revealHint ? (
+            <text fg={colors.dim}>{revealHint}</text>
+          ) : null}
+        </box>
         {envs.length === 0 ? (
           <text fg={colors.dim}>{"  (none)"}</text>
         ) : (

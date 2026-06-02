@@ -10,9 +10,10 @@ interface Props {
 
 /** Full-screen ASCII splash shown while the first resource fetch runs. */
 export function Splash({ contextName, error, spinner }: Props) {
-  const status = error
-    ? `could not reach ${contextName ?? "the instance"}`
-    : `connecting to ${contextName ?? "Coolify"}…`;
+  // On failure show the resolved, actionable error (unreachable host, bad token,
+  // blocked API) and drop the spinner — it would otherwise keep "trying" forever
+  // since the first fetch never lands.
+  const status = error ?? `connecting to ${contextName ?? "Coolify"}…`;
 
   return (
     <box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
@@ -34,8 +35,8 @@ export function Splash({ contextName, error, spinner }: Props) {
       <text> </text>
       <text fg={colors.dim}>k9s-style control for Coolify</text>
       <text> </text>
-      <text fg={error ? colors.stopped : colors.accent}>{`${spinner}  ${status}`}</text>
-      <text fg={colors.dim}>press any key to skip</text>
+      <text fg={error ? colors.stopped : colors.accent}>{error ? status : `${spinner}  ${status}`}</text>
+      <text fg={colors.dim}>{error ? "press any key to continue" : "press any key to skip"}</text>
     </box>
   );
 }

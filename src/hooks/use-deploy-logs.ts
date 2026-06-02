@@ -54,7 +54,10 @@ export function useDeployLogs(
         const deps = await new CoolifyClient(ctx).getDeployments(resource.uuid, take, controller.signal);
         if (controller.signal.aborted) return;
         const dep = trackUuid ? (deps.find((d) => d.uuid === trackUuid) ?? null) : (deps[0] ?? null);
-        setState({ deployment: dep, loading: false, error: null, supported: true });
+        // Tracking a freshly-queued deploy that hasn't surfaced yet is still
+        // "waiting", not "no deployments" — keep loading true so the pane says so.
+        const waitingForTracked = Boolean(trackUuid) && !dep;
+        setState({ deployment: dep, loading: waitingForTracked, error: null, supported: true });
         // Stop polling only once the deployment we're actually showing has settled.
         if (dep && isTerminalStatus(dep.status) && timer) clearInterval(timer);
       } catch (err) {

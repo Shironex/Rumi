@@ -76,9 +76,40 @@ export class CoolifyApiError extends Error {
   private static explain(status: number, body: string): string {
     if (status === 401) return "Unauthenticated: this instance's API token is invalid or expired.";
     if (status === 403) {
-      return "API access blocked. Enable the API and allow your IP in Coolify -> Settings -> API.";
+      return "API access blocked. In Coolify -> Settings -> Advanced -> API Settings, turn on API Access and add your IP under Allowed IPs for API Access.";
     }
     return `Coolify API error ${status}: ${body.slice(0, 140)}`;
+  }
+}
+
+/**
+ * Raised when the instance can't be reached at all (DNS failure, refused
+ * connection, TLS error, timeout) — i.e. `fetch` threw before any HTTP status.
+ * Carries actionable copy instead of Bun's terse "Unable to connect".
+ */
+export class CoolifyConnectionError extends Error {
+  constructor(
+    readonly contextName: string,
+    readonly fqdn: string,
+    override readonly cause: Error,
+  ) {
+    super(`Can't reach "${contextName}" (${fqdn}). Check the instance is online and the URL is correct.`);
+    this.name = "CoolifyConnectionError";
+  }
+}
+
+/**
+ * Raised when a request succeeds (2xx) but the body isn't the Coolify API JSON we
+ * expect — typically the fqdn points at a proxy, login page, or the wrong host.
+ * Without this, the raw `JSON.parse` SyntaxError would leak into the pane.
+ */
+export class CoolifyResponseError extends Error {
+  constructor(
+    readonly contextName: string,
+    readonly fqdn: string,
+  ) {
+    super(`"${contextName}" (${fqdn}) didn't return Coolify API data. Make sure the URL points at your instance, not a proxy or login page.`);
+    this.name = "CoolifyResponseError";
   }
 }
 
@@ -89,28 +120,52 @@ export class CoolifyClient {
     return { Authorization: `Bearer ${this.ctx.token}`, Accept: "application/json" };
   }
 
-  async listResources(signal?: AbortSignal): Promise<CoolifyResource[]> {
-    const res = await fetch(`${this.ctx.fqdn}/api/v1/resources`, { headers: this.headers(), signal });
+  /**
+   * Single fetch chokepoint: turns a thrown network error into a friendly
+   * {@link CoolifyConnectionError} (aborts pass through untouched) and a non-2xx
+   * response into a {@link CoolifyApiError}, so every caller surfaces consistent,
+   * actionable messages instead of raw runtime errors.
+   */
+  private async request(path: string, init: RequestInit | undefined, signal: AbortSignal | undefined): Promise<Response> {
+    let res: Response;
+    try {
+      res = await fetch(`${this.ctx.fqdn}${path}`, { ...init, headers: this.headers(), signal });
+    } catch (err) {
+      if (signal?.aborted || (err as Error).name === "AbortError") throw err;
+      throw new CoolifyConnectionError(this.ctx.name, this.ctx.fqdn, err as Error);
+    }
     if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
-    const data = (await res.json()) as RawResource[];
+    return res;
+  }
+
+  /**
+   * GET + JSON parse through the {@link request} chokepoint. A 2xx body that isn't
+   * JSON (proxy/login interstitial) becomes a {@link CoolifyResponseError} rather
+   * than a raw SyntaxError — and is never swallowed into a misleading empty result.
+   */
+  private async getJson<T>(path: string, signal: AbortSignal | undefined): Promise<T> {
+    const res = await this.request(path, undefined, signal);
+    const text = await res.text();
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new CoolifyResponseError(this.ctx.name, this.ctx.fqdn);
+    }
+  }
+
+  async listResources(signal?: AbortSignal): Promise<CoolifyResource[]> {
+    const data = await this.getJson<RawResource[]>(`/api/v1/resources`, signal);
     return data.map(toResource);
   }
 
   async listServers(signal?: AbortSignal): Promise<CoolifyServer[]> {
-    const res = await fetch(`${this.ctx.fqdn}/api/v1/servers`, { headers: this.headers(), signal });
-    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
-    const data = (await res.json()) as RawServer[];
+    const data = await this.getJson<RawServer[]>(`/api/v1/servers`, signal);
     return data.map(toServer);
   }
 
   /** REST logs exist for standalone applications only (services/databases 404). */
   async getApplicationLogs(uuid: string, lines: number, signal?: AbortSignal): Promise<string> {
-    const res = await fetch(`${this.ctx.fqdn}/api/v1/applications/${uuid}/logs?lines=${lines}`, {
-      headers: this.headers(),
-      signal,
-    });
-    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
-    const data = (await res.json()) as { logs?: string };
+    const data = await this.getJson<{ logs?: string }>(`/api/v1/applications/${uuid}/logs?lines=${lines}`, signal);
     return data.logs ?? "";
   }
 
@@ -133,12 +188,10 @@ export class CoolifyClient {
 
   /** Recent deployments for an app, newest first; each carries its parsed build log. */
   async getDeployments(appUuid: string, take: number, signal?: AbortSignal): Promise<Deployment[]> {
-    const res = await fetch(`${this.ctx.fqdn}/api/v1/deployments/applications/${appUuid}?take=${take}`, {
-      headers: this.headers(),
+    const data = await this.getJson<{ deployments?: RawDeployment[] }>(
+      `/api/v1/deployments/applications/${appUuid}?take=${take}`,
       signal,
-    });
-    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
-    const data = (await res.json()) as { deployments?: RawDeployment[] };
+    );
     return (data.deployments ?? []).map(toDeployment);
   }
 
@@ -146,12 +199,7 @@ export class CoolifyClient {
   async getEnvVars(resource: CoolifyResource, signal?: AbortSignal): Promise<EnvVar[]> {
     const segment = actionSegment(resource.kind);
     if (segment !== "applications" && segment !== "services") return [];
-    const res = await fetch(`${this.ctx.fqdn}/api/v1/${segment}/${resource.uuid}/envs`, {
-      headers: this.headers(),
-      signal,
-    });
-    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
-    const data = (await res.json()) as RawEnv[];
+    const data = await this.getJson<RawEnv[]>(`/api/v1/${segment}/${resource.uuid}/envs`, signal);
     return (Array.isArray(data) ? data : []).map(toEnvVar);
   }
 
@@ -159,18 +207,12 @@ export class CoolifyClient {
   async getConfig(resource: CoolifyResource, signal?: AbortSignal): Promise<ConfigField[]> {
     const segment = actionSegment(resource.kind);
     if (segment !== "applications" && segment !== "services") return [];
-    const res = await fetch(`${this.ctx.fqdn}/api/v1/${segment}/${resource.uuid}`, {
-      headers: this.headers(),
-      signal,
-    });
-    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
-    const raw = (await res.json()) as Record<string, unknown>;
+    const raw = await this.getJson<Record<string, unknown>>(`/api/v1/${segment}/${resource.uuid}`, signal);
     return curateConfig(raw);
   }
 
   private async post(path: string, signal?: AbortSignal): Promise<unknown> {
-    const res = await fetch(`${this.ctx.fqdn}${path}`, { method: "POST", headers: this.headers(), signal });
-    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
+    const res = await this.request(path, { method: "POST" }, signal);
     const text = await res.text();
     try {
       return JSON.parse(text);
