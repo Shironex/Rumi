@@ -13,7 +13,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # macos-latest is arm64; macos-15-intel covers the x64 mac we also ship a
+        # release binary for, so Intel-only smoke issues surface here, not only at release.
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
     runs-on: ${{ matrix.os }}
     # Cap the whole job well below the 6h default so a stuck step can't burn minutes.
     timeout-minutes: 15
