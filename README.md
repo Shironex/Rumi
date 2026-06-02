@@ -1,26 +1,52 @@
-# rumi
+<a name="top"></a>
 
-A fast, keyboard-driven terminal dashboard for [Coolify](https://coolify.io) — think `k9s`, but for your Coolify apps, services, and databases. Built on [OpenTUI](https://github.com/anomalyco/opentui) + React, running on [Bun](https://bun.sh).
+<div align="center">
 
-```
-   :%+-::::--:::            ██████╗  ██╗   ██╗ ███╗   ███╗ ██╗
-  #@*-:-==----::::          ██╔══██╗ ██║   ██║ ████╗ ████║ ██║
- *@=-+++==+=-----::         ██████╔╝ ██║   ██║ ██╔████╔██║ ██║
- @@=********+=--:--         ██╔══██╗ ██║   ██║ ██║╚██╔╝██║ ██║
- =@*:*####*****+=--:        ██║  ██║ ╚██████╔╝ ██║ ╚═╝ ██║ ██║
-  =*# :=*####*=+*=-:        ╚═╝  ╚═╝  ╚═════╝  ╚═╝     ╚═╝ ╚═╝
-                            k9s-style control for Coolify
-```
+<img src="assets/rumi.png" alt="rumi" width="180" height="180" />
+
+<h1>rumi</h1>
+
+<strong>A fast, keyboard-driven terminal dashboard for <a href="https://coolify.io">Coolify</a>.</strong>
+
+Think `k9s`, but for your Coolify apps, services, and databases.
+
+<p>
+  <a href="https://github.com/Shironex/Rumi/releases/latest"><img src="https://img.shields.io/github/v/release/Shironex/Rumi?style=flat&color=bd93f9" alt="Release" /></a>
+  <a href="https://github.com/Shironex/Rumi/releases"><img src="https://img.shields.io/github/downloads/Shironex/Rumi/total?style=flat&color=bd93f9" alt="Downloads" /></a>
+  <a href="https://github.com/Shironex/Rumi/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Shironex/Rumi/ci.yml?branch=main&style=flat&label=ci" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat" alt="Platform" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-bd93f9?style=flat" alt="License" /></a>
+</p>
+
+<p>
+  <a href="#install"><strong>Install</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/Shironex/Rumi/releases">Releases</a>
+  &nbsp;·&nbsp;
+  <a href="#keys">Keys</a>
+  &nbsp;·&nbsp;
+  <a href="#build-from-source">Build</a>
+</p>
+
+</div>
+
+> **Early development.** rumi is a young project under active development. Expect rough edges, missing features, and the occasional breaking change before a stable 1.0 release. Feedback and issues are welcome.
+
+---
+
+Built on [OpenTUI](https://github.com/anomalyco/opentui) + React, running on [Bun](https://bun.sh). Point it at your Coolify instance and drive deploys, logs, and config from the terminal without leaving your keyboard.
 
 ## Features
 
-- **Live resource list** — apps, services, and databases with colored health status, grouped and filterable (`/`).
-- **Lifecycle actions** — start/stop (`s`), restart (`r`), deploy (`d`), each behind a confirm prompt.
-- **Logs** — tail runtime container logs (`l`) and deploy/build logs (`L`), auto-following a deploy you just triggered.
-- **Config + env inspector** (`e`) — a resource's deployment configuration and env vars, with values masked by default (`v` to reveal).
-- **Servers view** (`tab`) — reachability, usability, and build-server flags for your hosts.
-- **Multiple instances** — switch between Coolify contexts (`c`); choices are remembered.
-- **Self-updating** — `rumi update` pulls the latest release.
+| Feature | What it does |
+| --- | --- |
+| **Live resource list** | Apps, services, and databases with colored health status, grouped and filterable (`/`). |
+| **Lifecycle actions** | Start/stop (`s`), restart (`r`), deploy (`d`), each behind a confirm prompt. |
+| **Logs** | Tail runtime container logs (`l`) and deploy/build logs (`L`), auto-following a deploy you just triggered. |
+| **Config + env inspector** | Inspect a resource's deployment config and env vars (`e`); values masked by default, `v` to reveal. |
+| **Servers view** | Reachability, usability, and build-server flags for your hosts (`tab`). |
+| **Multiple instances** | Switch between Coolify contexts (`c`); your choice is remembered. |
+| **Self-updating** | `rumi update` pulls the latest release in place. |
 
 ## Install
 
@@ -32,13 +58,13 @@ This installs the right binary for your platform into `~/.local/bin` (override w
 
 Prebuilt binaries are published for **macOS** (arm64, x64) and **Linux** (x64, arm64) on the [releases page](https://github.com/Shironex/Rumi/releases).
 
-### Windows (experimental)
+### Windows
 
-Windows builds are published but not yet verified in a real terminal — treat them as experimental. Download `rumi-windows-x64.exe` from the [releases page](https://github.com/Shironex/Rumi/releases), put it somewhere on your `PATH`, and run `rumi`. `rumi update` works on Windows too (it reads contexts from `%APPDATA%\coolify\config.json`, the same file the Coolify CLI uses).
+Windows support is new and still being polished, but the dashboard renders and runs. Download `rumi-windows-x64.exe` from the [releases page](https://github.com/Shironex/Rumi/releases), put it somewhere on your `PATH`, and run `rumi`. `rumi update` works on Windows too. It reads contexts from `%APPDATA%\coolify\config.json`, the same file the Coolify CLI uses.
 
 ## Configuration
 
-rumi reads its instances from the same file as the official [Coolify CLI](https://coolify.io/docs/get-started/cli) — `~/.config/coolify/config.json`:
+rumi reads its instances from the same file as the official [Coolify CLI](https://coolify.io/docs/get-started/cli), `~/.config/coolify/config.json`:
 
 ```json
 {
@@ -94,3 +120,5 @@ The splash art is generated from an image with `bun run scripts/make-splash.ts <
 ## License
 
 [MIT](LICENSE) © Shironex
+
+<p align="center"><a href="#top">Back to top</a></p>
