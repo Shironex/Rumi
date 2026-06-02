@@ -12,6 +12,7 @@ import { LogsPane } from "./components/logs-pane.tsx";
 import { Onboarding } from "./components/onboarding.tsx";
 import { ResourcesTable } from "./components/resources-table.tsx";
 import { ServersPane } from "./components/servers-pane.tsx";
+import { Toast } from "./components/toast.tsx";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
 import { type CoolifyResource, isTerminalStatus } from "./coolify/types.ts";
 import { useActions } from "./hooks/use-actions.ts";
@@ -21,6 +22,7 @@ import { useLogs } from "./hooks/use-logs.ts";
 import { useResourceList } from "./hooks/use-resource-list.ts";
 import { useServers } from "./hooks/use-servers.ts";
 import { useSpinner } from "./hooks/use-spinner.ts";
+import { useToast } from "./hooks/use-toast.ts";
 import { clamp } from "./util.ts";
 
 type View = "resources" | "servers";
@@ -45,8 +47,10 @@ export function App() {
     overlay?.kind === "deploy" ? overlay.trackUuid : undefined,
     overlay?.kind === "deploy",
   );
+  const toast = useToast();
   const actions = useActions(contexts.active, (resource, id, deploymentUuid) => {
     list.refresh();
+    toast.show(`${resource.name} · ${id} requested`);
     // After a build-triggering action on an app, tail that exact deployment.
     if (resource.kind === "application" && id !== "stop" && (USE_MOCK || deploymentUuid)) {
       setOverlay({ kind: "deploy", resource, trackUuid: deploymentUuid });
@@ -266,6 +270,8 @@ export function App() {
       ) : null}
 
       {helpOpen ? <HelpOverlay /> : null}
+
+      {toast.toast ? <Toast text={toast.toast.text} tone={toast.toast.tone} /> : null}
     </box>
   );
 }

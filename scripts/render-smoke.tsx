@@ -69,6 +69,7 @@ const deployFrame = a.captureCharFrame();
 assert(deployFrame.includes("deploy ·"), "confirming restart auto-opens deploy logs");
 assert(deployFrame.includes("npm ci"), "deploy build lines render");
 assert(!deployFrame.includes("coolify-helper"), "hidden build steps are filtered out");
+assert(deployFrame.includes("restart requested"), "action fires a confirmation toast");
 
 // Deploy logs on demand (shift+l) without triggering an action.
 const dl = await testRender(<App />, { width: 160, height: 40 });
