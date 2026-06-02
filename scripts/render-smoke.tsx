@@ -52,6 +52,15 @@ const u = await testRender(
 await u.waitForFrame((f) => f.includes("applications only"), { maxPasses: 200 });
 assert(u.captureCharFrame().includes("applications only"), "unsupported logs message for database");
 
+// Action confirm modal — fresh App so selection is the first app (lunofi-api).
+const a = await testRender(<App />, { width: 160, height: 40 });
+await a.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+a.mockInput.pressKey("r");
+await a.waitForFrame((f) => f.includes("Restart this resource?"), { maxPasses: 300 });
+const confirmFrame = a.captureCharFrame();
+assert(confirmFrame.includes("Restart this resource?"), "restart key opens the confirm modal");
+assert(confirmFrame.includes("y confirm"), "confirm modal shows the y/n prompt");
+
 console.log("\nrender smoke passed.\n");
 console.log(appLogs);
 process.exit(0);
