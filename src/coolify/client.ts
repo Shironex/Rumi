@@ -1,4 +1,5 @@
 import type { CoolifyContext } from "../config.ts";
+import { isAbortError } from "../util.ts";
 import { actionSegment, type LifecycleAction } from "./actions.ts";
 import {
   type ConfigField,
@@ -41,7 +42,7 @@ interface RawServer {
   is_reachable?: boolean;
   is_usable?: boolean;
   is_coolify_host?: boolean;
-  settings?: { is_build_server?: boolean } | null;
+  settings?: { is_build_server?: boolean; is_reachable?: boolean; is_usable?: boolean } | null;
 }
 
 interface RawResource {
@@ -131,7 +132,7 @@ export class CoolifyClient {
     try {
       res = await fetch(`${this.ctx.fqdn}${path}`, { ...init, headers: this.headers(), signal });
     } catch (err) {
-      if (signal?.aborted || (err as Error).name === "AbortError") throw err;
+      if (isAbortError(err, signal)) throw err;
       throw new CoolifyConnectionError(this.ctx.name, this.ctx.fqdn, err as Error);
     }
     if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
@@ -155,12 +156,12 @@ export class CoolifyClient {
 
   async listResources(signal?: AbortSignal): Promise<CoolifyResource[]> {
     const data = await this.getJson<RawResource[]>(`/api/v1/resources`, signal);
-    return data.map(toResource);
+    return (Array.isArray(data) ? data : []).map(toResource);
   }
 
   async listServers(signal?: AbortSignal): Promise<CoolifyServer[]> {
     const data = await this.getJson<RawServer[]>(`/api/v1/servers`, signal);
-    return data.map(toServer);
+    return (Array.isArray(data) ? data : []).map(toServer);
   }
 
   /** REST logs exist for standalone applications only (services/databases 404). */
@@ -192,21 +193,21 @@ export class CoolifyClient {
       `/api/v1/deployments/applications/${appUuid}?take=${take}`,
       signal,
     );
-    return (data.deployments ?? []).map(toDeployment);
+    return (Array.isArray(data.deployments) ? data.deployments : []).map(toDeployment);
   }
 
   /** Env vars for an app/service. Values come back only with a sensitive-read token. */
   async getEnvVars(resource: CoolifyResource, signal?: AbortSignal): Promise<EnvVar[]> {
-    const segment = actionSegment(resource.kind);
-    if (segment !== "applications" && segment !== "services") return [];
+    const segment = envConfigSegment(resource);
+    if (!segment) return [];
     const data = await this.getJson<RawEnv[]>(`/api/v1/${segment}/${resource.uuid}/envs`, signal);
     return (Array.isArray(data) ? data : []).map(toEnvVar);
   }
 
   /** Curated deployment configuration for an app/service, read off the detail object. */
   async getConfig(resource: CoolifyResource, signal?: AbortSignal): Promise<ConfigField[]> {
-    const segment = actionSegment(resource.kind);
-    if (segment !== "applications" && segment !== "services") return [];
+    const segment = envConfigSegment(resource);
+    if (!segment) return [];
     const raw = await this.getJson<Record<string, unknown>>(`/api/v1/${segment}/${resource.uuid}`, signal);
     return curateConfig(raw);
   }
@@ -220,6 +221,12 @@ export class CoolifyClient {
       return {};
     }
   }
+}
+
+/** The REST segment for resources that expose envs/config (apps + services), else null. */
+function envConfigSegment(resource: CoolifyResource): "applications" | "services" | null {
+  const segment = actionSegment(resource.kind);
+  return segment === "applications" || segment === "services" ? segment : null;
 }
 
 /** Pull a deployment_uuid out of an action response (top-level or deployments[0]). */
@@ -298,14 +305,20 @@ function curateConfig(raw: Record<string, unknown>): ConfigField[] {
   return fields;
 }
 
-function toServer(raw: RawServer): CoolifyServer {
+/**
+ * Coolify's GET /servers nests reachability under `settings` (per the OpenAPI
+ * schema and our own probe-servers.ts), but some versions/shapes expose it at the
+ * top level. Read both — settings first, top-level as fallback — so a server is
+ * never mislabeled "unreachable" just because the field moved.
+ */
+export function toServer(raw: RawServer): CoolifyServer {
   return {
     uuid: raw.uuid ?? "",
     name: raw.name ?? "(unnamed)",
     description: cleanStr(raw.description),
     ip: raw.ip ?? "",
-    reachable: raw.is_reachable ?? false,
-    usable: raw.is_usable ?? false,
+    reachable: raw.settings?.is_reachable ?? raw.is_reachable ?? false,
+    usable: raw.settings?.is_usable ?? raw.is_usable ?? false,
     isCoolifyHost: raw.is_coolify_host ?? false,
     buildServer: raw.settings?.is_build_server ?? false,
   };
