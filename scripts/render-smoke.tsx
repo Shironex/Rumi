@@ -92,6 +92,23 @@ hp.mockInput.pressKey("?");
 await hp.waitForFrame((f) => f.includes("kanrisha · keys"), { maxPasses: 300 });
 assert(hp.captureCharFrame().includes("kanrisha · keys"), "? opens the help overlay");
 
+// Config + env inspector opens on e (selection starts on lunofi-api, an app).
+const ci = await testRender(<App />, { width: 160, height: 40 });
+await ci.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+ci.mockInput.pressKey("e");
+await ci.waitForFrame((f) => f.includes("config ·"), { maxPasses: 300 });
+const cfgFrame = ci.captureCharFrame();
+assert(cfgFrame.includes("config ·"), "e opens the config + env inspector");
+assert(cfgFrame.includes("DATABASE_URL"), "env keys render in the inspector");
+assert(cfgFrame.includes("nixpacks"), "curated config fields render");
+assert(cfgFrame.includes("••"), "env values are masked by default");
+assert(!cfgFrame.includes("s3cr3t"), "masked values stay hidden");
+
+// v reveals the real env values.
+ci.mockInput.pressKey("v");
+await ci.waitForFrame((f) => f.includes("s3cr3t"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("s3cr3t"), "v reveals env values");
+
 // Onboarding empty state - rendered standalone (only paints at 0 contexts).
 const o = await testRender(<Onboarding />, { width: 100, height: 16 });
 await o.waitForFrame((f) => f.includes("Welcome to kanrisha"), { maxPasses: 200 });
