@@ -1,12 +1,15 @@
 import { colors } from "../theme.ts";
 
+type View = "resources" | "servers";
+
 interface Props {
   filterMode: boolean;
   filter: string;
   logsOpen: boolean;
+  view: View;
 }
 
-export function FooterBar({ filterMode, filter, logsOpen }: Props) {
+export function FooterBar({ filterMode, filter, logsOpen, view }: Props) {
   if (filterMode) {
     return (
       <box flexDirection="row">
@@ -15,8 +18,14 @@ export function FooterBar({ filterMode, filter, logsOpen }: Props) {
       </box>
     );
   }
-  const hints = logsOpen
-    ? "tailing logs   l/esc close   q quit"
-    : "↑↓/jk move   / filter   l logs   s/r/d start·restart·deploy   R refresh   c context   q quit";
+
+  let hints: string;
+  if (logsOpen) {
+    hints = "tailing logs   l/esc close   q quit";
+  } else if (view === "servers") {
+    hints = "↑↓/jk move   R refresh   c context   tab resources   q quit";
+  } else {
+    hints = "↑↓/jk move   / filter   l logs   s/r/d start·restart·deploy   R refresh   c context   tab servers   q quit";
+  }
   return <text fg={colors.dim}>{hints}</text>;
 }

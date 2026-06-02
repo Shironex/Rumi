@@ -74,6 +74,15 @@ const o = await testRender(<Onboarding />, { width: 100, height: 16 });
 await o.waitForFrame((f) => f.includes("Welcome to kanrisha"), { maxPasses: 200 });
 assert(o.captureCharFrame().includes("No Coolify instance is configured"), "onboarding empty state renders");
 
+// Servers view — fresh App, tab switches resources -> servers.
+const s = await testRender(<App />, { width: 160, height: 40 });
+await s.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+s.mockInput.pressTab();
+await s.waitForFrame((f) => f.includes("servers ("), { maxPasses: 300 });
+const serversFrame = s.captureCharFrame();
+assert(serversFrame.includes("servers ("), "tab switches to the servers view");
+assert(serversFrame.includes("production-main"), "server row renders");
+
 console.log("\nrender smoke passed.\n");
 console.log(appLogs);
 process.exit(0);

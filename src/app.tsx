@@ -8,19 +8,25 @@ import { HeaderBar } from "./components/header-bar.tsx";
 import { LogsPane } from "./components/logs-pane.tsx";
 import { Onboarding } from "./components/onboarding.tsx";
 import { ResourcesTable } from "./components/resources-table.tsx";
+import { ServersPane } from "./components/servers-pane.tsx";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
 import type { CoolifyResource } from "./coolify/types.ts";
 import { useActions } from "./hooks/use-actions.ts";
 import { useContexts } from "./hooks/use-contexts.ts";
 import { useLogs } from "./hooks/use-logs.ts";
 import { useResourceList } from "./hooks/use-resource-list.ts";
+import { useServers } from "./hooks/use-servers.ts";
 import { clamp } from "./util.ts";
+
+type View = "resources" | "servers";
 
 const LOGS_HEIGHT = 14;
 
 export function App() {
   const contexts = useContexts();
   const list = useResourceList(contexts.active);
+  const [view, setView] = useState<View>("resources");
+  const servers = useServers(contexts.active, view === "servers");
   const [logsResource, setLogsResource] = useState<CoolifyResource | undefined>(undefined);
   const logsOpen = logsResource !== undefined;
   const logs = useLogs(contexts.active, logsResource, logsOpen);
@@ -66,47 +72,62 @@ export function App() {
       if (e.name === "escape" || e.name === "l") setLogsResource(undefined);
       return;
     }
-    // 5) global
-    if (e.name === "/" || e.sequence === "/") {
-      list.startFilter();
-      return;
-    }
-    if (e.name === "escape" && list.filter) {
-      list.clearFilter();
-      return;
-    }
+
+    // 5) global — keys live in every view
     if (quit) process.exit(0);
+    if (e.name === "tab") {
+      setView((v) => (v === "resources" ? "servers" : "resources"));
+      return;
+    }
     if (e.name === "c" && !noContexts) {
       setContextCursor(contexts.activeIndex);
       setContextOpen(true);
       return;
     }
-    if (e.name === "l") {
-      if (list.selectedRow) setLogsResource(list.selectedRow);
-      return;
-    }
-    // refresh moved to R; r is now restart (PRD). Shift+r arrives as sequence "R".
+    // refresh moved to R; r is restart in the resources view. Shift+r arrives as sequence "R".
     if (e.sequence === "R") {
-      list.refresh();
+      if (view === "servers") servers.refresh();
+      else list.refresh();
       return;
     }
-    const row = list.selectedRow;
-    if (row && canAct(row)) {
-      if (e.name === "s") {
-        actions.request(row, toggleVerb(row.state));
+
+    // 6) resources-view-only keys
+    if (view === "resources") {
+      if (e.name === "/" || e.sequence === "/") {
+        list.startFilter();
         return;
       }
-      if (e.name === "r") {
-        actions.request(row, "restart");
+      if (e.name === "escape" && list.filter) {
+        list.clearFilter();
         return;
       }
-      if (e.name === "d" && canDeploy(row)) {
-        actions.request(row, "deploy");
+      if (e.name === "l") {
+        if (list.selectedRow) setLogsResource(list.selectedRow);
         return;
+      }
+      const row = list.selectedRow;
+      if (row && canAct(row)) {
+        if (e.name === "s") {
+          actions.request(row, toggleVerb(row.state));
+          return;
+        }
+        if (e.name === "r") {
+          actions.request(row, "restart");
+          return;
+        }
+        if (e.name === "d" && canDeploy(row)) {
+          actions.request(row, "deploy");
+          return;
+        }
       }
     }
-    if (e.name === "up" || e.name === "k") list.move(-1);
-    else if (e.name === "down" || e.name === "j") list.move(1);
+
+    // 7) navigation, scoped to the active view
+    const dir = e.name === "up" || e.name === "k" ? -1 : e.name === "down" || e.name === "j" ? 1 : 0;
+    if (dir !== 0) {
+      if (view === "servers") servers.move(dir);
+      else list.move(dir);
+    }
   });
 
   const viewportHeight = Math.max(3, height - 7 - (logsOpen ? LOGS_HEIGHT : 0));
@@ -125,6 +146,16 @@ export function App() {
 
       {noContexts ? (
         <Onboarding />
+      ) : view === "servers" ? (
+        <box flexDirection="row" flexGrow={1}>
+          <ServersPane
+            servers={servers.servers}
+            selectedIndex={servers.selected}
+            loading={servers.loading}
+            error={servers.error}
+            viewportHeight={viewportHeight}
+          />
+        </box>
       ) : (
         <box flexDirection="row" flexGrow={1}>
           <ResourcesTable
@@ -154,7 +185,7 @@ export function App() {
         />
       ) : null}
 
-      <FooterBar filterMode={list.filterMode} filter={list.filter} logsOpen={logsOpen} />
+      <FooterBar filterMode={list.filterMode} filter={list.filter} logsOpen={logsOpen} view={view} />
 
       {actions.pending ? (
         <ConfirmModal
