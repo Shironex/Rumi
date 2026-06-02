@@ -14,6 +14,8 @@ interface Props {
   maxWidth: number;
   focused: boolean;
   scrollRef?: Ref<ScrollBoxRenderable>;
+  /** Current spinner frame, shown while the build is still running. */
+  spinner?: string;
 }
 
 function statusColor(status: string): string {
@@ -29,7 +31,7 @@ function lineColor(type: DeployLogType): string {
   return colors.text;
 }
 
-export function DeployLogsPane({ name, deployment, loading, error, supported, height, maxWidth, focused, scrollRef }: Props) {
+export function DeployLogsPane({ name, deployment, loading, error, supported, height, maxWidth, focused, scrollRef, spinner }: Props) {
   let body: ReactNode;
   if (!supported) {
     body = <text fg={colors.dim}>Deploy logs are available for applications only.</text>;
@@ -75,7 +77,8 @@ export function DeployLogsPane({ name, deployment, loading, error, supported, he
     >
       {supported && deployment ? (
         <text fg={statusColor(deployment.status)}>
-          {deployment.status +
+          {(!isTerminalStatus(deployment.status) && spinner ? `${spinner} ` : "") +
+            deployment.status +
             (deployment.commit ? `  ${deployment.commit.slice(0, 7)}` : "") +
             (deployment.commitMessage ? `  ${deployment.commitMessage}` : "")}
         </text>

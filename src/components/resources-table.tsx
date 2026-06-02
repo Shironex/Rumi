@@ -14,6 +14,8 @@ interface Props {
   viewportHeight: number;
   loading: boolean;
   error: string | null;
+  /** Current spinner frame, rendered on transitioning rows. */
+  spinner?: string;
 }
 
 const NAME_WIDTH = 26;
@@ -33,7 +35,7 @@ function windowFor(total: number, selected: number, rows: number): { start: numb
   return { start, end: start + rows };
 }
 
-export function ResourcesTable({ resources, total, filter, selectedIndex, focused, viewportHeight, loading, error }: Props) {
+export function ResourcesTable({ resources, total, filter, selectedIndex, focused, viewportHeight, loading, error, spinner }: Props) {
   const borderColor = focused ? colors.accent : colors.border;
   const title = filter
     ? ` resources (${resources.length}/${total})  /${filter} `
@@ -62,7 +64,7 @@ export function ResourcesTable({ resources, total, filter, selectedIndex, focuse
               backgroundColor={selected ? colors.selectedBg : undefined}
             >
               <text fg={selected ? colors.selectedFg : colors.text}>{label}</text>
-              <StatusDot state={r.state} />
+              <StatusDot state={r.state} spinner={spinner} />
               <text fg={selected ? colors.selectedFg : colors.dim}>{" " + r.status}</text>
             </box>
           );

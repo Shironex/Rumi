@@ -13,13 +13,14 @@ import { Onboarding } from "./components/onboarding.tsx";
 import { ResourcesTable } from "./components/resources-table.tsx";
 import { ServersPane } from "./components/servers-pane.tsx";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
-import type { CoolifyResource } from "./coolify/types.ts";
+import { type CoolifyResource, isTerminalStatus } from "./coolify/types.ts";
 import { useActions } from "./hooks/use-actions.ts";
 import { useContexts } from "./hooks/use-contexts.ts";
 import { useDeployLogs } from "./hooks/use-deploy-logs.ts";
 import { useLogs } from "./hooks/use-logs.ts";
 import { useResourceList } from "./hooks/use-resource-list.ts";
 import { useServers } from "./hooks/use-servers.ts";
+import { useSpinner } from "./hooks/use-spinner.ts";
 import { clamp } from "./util.ts";
 
 type View = "resources" | "servers";
@@ -59,6 +60,11 @@ export function App() {
 
   const noContexts = contexts.contexts.length === 0;
   const lastContext = Math.max(0, contexts.contexts.length - 1);
+
+  // Animate only when something is actually in motion (keeps the render quiet otherwise).
+  const deployRunning =
+    overlay?.kind === "deploy" && deployLogs.deployment != null && !isTerminalStatus(deployLogs.deployment.status);
+  const spinner = useSpinner(list.filtered.some((r) => r.state === "transitioning") || deployRunning);
 
   // useKeyboard wraps this in useEffectEvent, so it always sees current state - no refs needed.
   useKeyboard((e) => {
@@ -211,6 +217,7 @@ export function App() {
             viewportHeight={viewportHeight}
             loading={list.loading}
             error={list.error}
+            spinner={spinner}
           />
           <DetailPane resource={list.selectedRow} focused={false} />
         </box>
@@ -239,6 +246,7 @@ export function App() {
           maxWidth={width - 6}
           focused
           scrollRef={logScrollRef}
+          spinner={spinner}
         />
       ) : null}
 
