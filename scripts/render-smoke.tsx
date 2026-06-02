@@ -43,7 +43,7 @@ const appLogs = t.captureCharFrame();
 assert(appLogs.includes("logs ·"), "logs pane opens for an app");
 assert(appLogs.includes("listening on :3000") || appLogs.includes("starting up"), "log lines tail");
 
-// Unsupported state for non-applications — rendered standalone (avoids brittle
+// Unsupported state for non-applications - rendered standalone (avoids brittle
 // multi-keypress nav; the message path is the only thing under test here).
 const db = mockResources().find((r) => r.kind === "database")!;
 const u = await testRender(
@@ -53,7 +53,7 @@ const u = await testRender(
 await u.waitForFrame((f) => f.includes("applications only"), { maxPasses: 200 });
 assert(u.captureCharFrame().includes("applications only"), "unsupported logs message for database");
 
-// Action confirm modal — fresh App so selection is the first app (lunofi-api).
+// Action confirm modal - fresh App so selection is the first app (lunofi-api).
 const a = await testRender(<App />, { width: 160, height: 40 });
 await a.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 a.mockInput.pressKey("r");
@@ -62,19 +62,19 @@ const confirmFrame = a.captureCharFrame();
 assert(confirmFrame.includes("Restart this resource?"), "restart key opens the confirm modal");
 assert(confirmFrame.includes("y confirm"), "confirm modal shows the y/n prompt");
 
-// Context switcher modal — fresh App, real contexts loaded from the CLI config.
+// Context switcher modal - fresh App, real contexts loaded from the CLI config.
 const b = await testRender(<App />, { width: 160, height: 40 });
 await b.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 b.mockInput.pressKey("c");
 await b.waitForFrame((f) => f.includes("switch context"), { maxPasses: 300 });
 assert(b.captureCharFrame().includes("switch context"), "c opens the context switcher");
 
-// Onboarding empty state — rendered standalone (only paints at 0 contexts).
+// Onboarding empty state - rendered standalone (only paints at 0 contexts).
 const o = await testRender(<Onboarding />, { width: 100, height: 16 });
 await o.waitForFrame((f) => f.includes("Welcome to kanrisha"), { maxPasses: 200 });
 assert(o.captureCharFrame().includes("No Coolify instance is configured"), "onboarding empty state renders");
 
-// Servers view — fresh App, tab switches resources -> servers.
+// Servers view - fresh App, tab switches resources -> servers.
 const s = await testRender(<App />, { width: 160, height: 40 });
 await s.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 s.mockInput.pressTab();

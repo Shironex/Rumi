@@ -38,7 +38,7 @@ export function App() {
   const noContexts = contexts.contexts.length === 0;
   const lastContext = Math.max(0, contexts.contexts.length - 1);
 
-  // useKeyboard wraps this in useEffectEvent, so it always sees current state — no refs needed.
+  // useKeyboard wraps this in useEffectEvent, so it always sees current state - no refs needed.
   useKeyboard((e) => {
     const quit = e.name === "q" || (e.ctrl && e.name === "c");
 
@@ -47,7 +47,7 @@ export function App() {
       list.handleFilterKey(e);
       return;
     }
-    // 2) confirm modal: y confirms, esc / n cancels (never Enter — too reflexive)
+    // 2) confirm modal: y confirms, esc / n cancels (never Enter - too reflexive)
     if (actions.pending) {
       if (quit) process.exit(0);
       if (e.name === "y") actions.confirm();
@@ -73,7 +73,7 @@ export function App() {
       return;
     }
 
-    // 5) global — keys live in every view
+    // 5) global - keys live in every view
     if (quit) process.exit(0);
     if (e.name === "tab") {
       setView((v) => (v === "resources" ? "servers" : "resources"));
