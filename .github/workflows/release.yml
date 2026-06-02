@@ -19,7 +19,7 @@ jobs:
           # macos-15 is the current arm64 pin (macOS 26 is GA, so 14 is on the
           # deprecation path).
           - runner: macos-15
-            asset: rumi-darwin-arm64
+            asset: rumi-macos-arm64
           - runner: ubuntu-latest
             asset: rumi-linux-x64
           - runner: ubuntu-24.04-arm

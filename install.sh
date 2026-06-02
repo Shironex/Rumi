@@ -10,7 +10,7 @@ INSTALL_DIR="${RUMI_INSTALL_DIR:-$HOME/.local/bin}"
 os="$(uname -s)"
 arch="$(uname -m)"
 case "$os" in
-  Darwin) os="darwin" ;;
+  Darwin) os="macos" ;;
   Linux) os="linux" ;;
   *) echo "Unsupported OS: $os" >&2; exit 1 ;;
 esac
@@ -21,7 +21,7 @@ case "$arch" in
 esac
 
 # x64 (Intel) macOS is not published yet (Intel is being sunset; it is on the roadmap).
-if [ "$os" = "darwin" ] && [ "$arch" = "x64" ]; then
+if [ "$os" = "macos" ] && [ "$arch" = "x64" ]; then
   echo "No Intel (x64) macOS build is published yet. Apple Silicon installs automatically." >&2
   echo "Meanwhile, build from source: https://github.com/${REPO}#build-from-source" >&2
   exit 1
@@ -40,7 +40,7 @@ if ! curl -fsSL "$url" -o "$tmp"; then
 fi
 chmod +x "$tmp"
 # Strip the quarantine xattr a download can set on macOS, so the binary execs.
-[ "$os" = "darwin" ] && xattr -dr com.apple.quarantine "$tmp" 2>/dev/null || true
+[ "$os" = "macos" ] && xattr -dr com.apple.quarantine "$tmp" 2>/dev/null || true
 mv "$tmp" "$INSTALL_DIR/rumi"
 
 echo "Installed rumi to ${INSTALL_DIR}/rumi"

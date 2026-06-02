@@ -3,11 +3,11 @@ import { VERSION } from "./version.ts";
 
 const REPO = "Shironex/Rumi";
 
-/** Release asset name for the running platform, e.g. "rumi-darwin-arm64" / "rumi-windows-x64.exe". */
+/** Release asset name for the running platform, e.g. "rumi-macos-arm64" / "rumi-windows-x64.exe". */
 function assetName(): string | null {
   const os =
     process.platform === "darwin"
-      ? "darwin"
+      ? "macos"
       : process.platform === "linux"
         ? "linux"
         : process.platform === "win32"
