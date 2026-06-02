@@ -17,6 +17,7 @@ import { Splash } from "./components/splash.tsx";
 import { Toast } from "./components/toast.tsx";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
 import { type CoolifyResource, isTerminalStatus } from "./coolify/types.ts";
+import { USE_MOCK } from "./env.ts";
 import { useActions } from "./hooks/use-actions.ts";
 import { useConfig } from "./hooks/use-config.ts";
 import { useContexts } from "./hooks/use-contexts.ts";
@@ -36,7 +37,6 @@ type Overlay =
 
 const LOGS_HEIGHT = 14;
 const CONFIG_HEIGHT = 18;
-const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export function App() {
   const contexts = useContexts();
@@ -247,7 +247,7 @@ export function App() {
       />
 
       {noContexts ? (
-        <Onboarding />
+        <Onboarding configError={contexts.error} />
       ) : view === "servers" ? (
         <box flexDirection="row" flexGrow={1}>
           <ServersPane
@@ -255,6 +255,7 @@ export function App() {
             selectedIndex={servers.selected}
             loading={servers.loading}
             error={servers.error}
+            lastUpdated={servers.lastUpdated}
             viewportHeight={viewportHeight}
           />
         </box>

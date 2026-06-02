@@ -42,7 +42,10 @@ export function ResourcesTable({ resources, total, filter, selectedIndex, focuse
     : ` resources (${total}) `;
 
   let body: ReactNode;
-  if (error) {
+  // Only blank the table for an error when there's nothing to show; on a transient
+  // poll failure the hook keeps the last-good rows, and the header bar already
+  // surfaces the API-error indicator — don't wipe the data the user was reading.
+  if (error && resources.length === 0) {
     body = <text fg={colors.stopped}>{error}</text>;
   } else if (loading && total === 0) {
     body = <text fg={colors.dim}>Loading…</text>;

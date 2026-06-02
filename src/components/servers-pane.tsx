@@ -7,6 +7,8 @@ interface Props {
   selectedIndex: number;
   loading: boolean;
   error: string | null;
+  /** Last successful load, shown in the title for freshness (parity with the resources view). */
+  lastUpdated?: number | null;
   viewportHeight: number;
 }
 
@@ -29,9 +31,13 @@ function healthLabel(s: CoolifyServer): string {
   return "ready";
 }
 
-export function ServersPane({ servers, selectedIndex, loading, error, viewportHeight }: Props) {
+export function ServersPane({ servers, selectedIndex, loading, error, lastUpdated, viewportHeight }: Props) {
+  const title = ` servers (${servers.length})${lastUpdated ? ` · ${new Date(lastUpdated).toLocaleTimeString()}` : ""} `;
   let body: ReactNode;
-  if (error) {
+  // Only blank the pane for an error when there's nothing to show; on a transient
+  // poll failure the hook keeps the last-good rows. Servers has no header badge,
+  // so when rows survive an error we surface it as a non-destructive warning line.
+  if (error && servers.length === 0) {
     body = <text fg={colors.stopped}>{error}</text>;
   } else if (loading && servers.length === 0) {
     body = <text fg={colors.dim}>Loading…</text>;
@@ -41,6 +47,7 @@ export function ServersPane({ servers, selectedIndex, loading, error, viewportHe
     const rows = Math.max(1, viewportHeight);
     body = (
       <box flexDirection="column">
+        {error ? <text fg={colors.stopped}>{`⚠ ${error}`}</text> : null}
         <text fg={colors.dim}>{"  " + pad("NAME", NAME_WIDTH) + pad("IP", IP_WIDTH) + "STATUS"}</text>
         {servers.slice(0, rows).map((s, i) => {
           const selected = i === selectedIndex;
@@ -60,7 +67,7 @@ export function ServersPane({ servers, selectedIndex, loading, error, viewportHe
 
   return (
     <box
-      title={` servers (${servers.length}) `}
+      title={title}
       border
       borderColor={colors.accent}
       flexGrow={1}

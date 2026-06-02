@@ -1,4 +1,5 @@
 import { TextAttributes } from "@opentui/core";
+import { memo } from "react";
 import type { CoolifyResource } from "../coolify/types.ts";
 import { colors, stateColor } from "../theme.ts";
 
@@ -25,7 +26,9 @@ function Row({ label, value, valueColor }: { label: string; value?: string; valu
   );
 }
 
-export function DetailPane({ resource, focused }: { resource?: CoolifyResource; focused: boolean }) {
+// Memoized: `resource` is a stable reference across spinner ticks (the filtered
+// list only recomputes on data/filter change), so the detail pane skips them.
+export const DetailPane = memo(function DetailPane({ resource, focused }: { resource?: CoolifyResource; focused: boolean }) {
   const branch = resource?.meta.gitBranch
     ? resource.meta.gitBranch +
       (resource.meta.gitCommitSha ? ` @ ${resource.meta.gitCommitSha.slice(0, 7)}` : "")
@@ -64,4 +67,4 @@ export function DetailPane({ resource, focused }: { resource?: CoolifyResource; 
       )}
     </box>
   );
-}
+});

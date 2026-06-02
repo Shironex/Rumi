@@ -1,4 +1,5 @@
 import { TextAttributes } from "@opentui/core";
+import { memo } from "react";
 import { colors } from "../theme.ts";
 
 interface Props {
@@ -16,7 +17,9 @@ function clockOf(ts: number | null): string {
   return new Date(ts).toLocaleTimeString();
 }
 
-export function HeaderBar({ contextName, loading, error, running, problems, lastUpdated, total }: Props) {
+// Memoized: all props are primitives, so this skips re-render on the 90ms spinner
+// tick and only repaints when the header data actually changes.
+export const HeaderBar = memo(function HeaderBar({ contextName, loading, error, running, problems, lastUpdated, total }: Props) {
   return (
     <box flexDirection="row">
       <text fg={colors.accent} attributes={TextAttributes.BOLD}>
@@ -37,4 +40,4 @@ export function HeaderBar({ contextName, loading, error, running, problems, last
       )}
     </box>
   );
-}
+});

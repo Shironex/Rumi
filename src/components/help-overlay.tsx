@@ -28,6 +28,7 @@ const SECTIONS: ReadonlyArray<{ title: string; keys: ReadonlyArray<readonly [str
       ["e", "config + env vars"],
       ["v", "reveal env values"],
       ["↑ ↓", "scroll while open"],
+      ["PgUp PgDn", "scroll a page"],
       ["esc", "close overlay"],
     ],
   },
