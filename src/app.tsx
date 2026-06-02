@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { ConfirmModal } from "./components/confirm-modal.tsx";
 import { ContextModal } from "./components/context-modal.tsx";
@@ -51,6 +52,7 @@ export function App() {
   });
   const [contextOpen, setContextOpen] = useState(false);
   const [contextCursor, setContextCursor] = useState(0);
+  const logScrollRef = useRef<ScrollBoxRenderable | null>(null);
   const { width, height } = useTerminalDimensions();
 
   const noContexts = contexts.contexts.length === 0;
@@ -85,12 +87,16 @@ export function App() {
       }
       return;
     }
-    // 4) logs / deploy-logs overlay (quit stays live; nav disabled while tailing)
+    // 4) logs / deploy-logs overlay: esc/key closes; arrows scroll history (sticky auto-tails)
     if (overlay) {
       if (quit) process.exit(0);
       if (e.name === "escape") setOverlay(null);
       else if (overlay.kind === "runtime" && e.name === "l") setOverlay(null);
       else if (overlay.kind === "deploy" && wantsDeployLog) setOverlay(null);
+      else if (e.name === "up" || e.name === "k") logScrollRef.current?.scrollBy(-1);
+      else if (e.name === "down" || e.name === "j") logScrollRef.current?.scrollBy(1);
+      else if (e.name === "pageup") logScrollRef.current?.scrollBy(-1, "viewport");
+      else if (e.name === "pagedown") logScrollRef.current?.scrollBy(1, "viewport");
       return;
     }
 
@@ -208,6 +214,7 @@ export function App() {
           height={LOGS_HEIGHT}
           maxWidth={width - 6}
           focused
+          scrollRef={logScrollRef}
         />
       ) : overlay?.kind === "deploy" ? (
         <DeployLogsPane
@@ -219,6 +226,7 @@ export function App() {
           height={LOGS_HEIGHT}
           maxWidth={width - 6}
           focused
+          scrollRef={logScrollRef}
         />
       ) : null}
 

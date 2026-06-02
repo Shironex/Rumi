@@ -21,7 +21,7 @@ export function FooterBar({ filterMode, filter, logsOpen, view }: Props) {
 
   let hints: string;
   if (logsOpen) {
-    hints = "tailing   esc close   q quit";
+    hints = "tailing   ↑↓ scroll   esc close   q quit";
   } else if (view === "servers") {
     hints = "↑↓/jk move   R refresh   c context   tab resources   q quit";
   } else {

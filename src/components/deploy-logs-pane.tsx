@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { ScrollBoxRenderable } from "@opentui/core";
+import type { ReactNode, Ref } from "react";
 import { type Deployment, type DeployLogType, isTerminalStatus } from "../coolify/types.ts";
 import { colors } from "../theme.ts";
 
@@ -12,6 +13,7 @@ interface Props {
   height: number;
   maxWidth: number;
   focused: boolean;
+  scrollRef?: Ref<ScrollBoxRenderable>;
 }
 
 function statusColor(status: string): string {
@@ -27,9 +29,7 @@ function lineColor(type: DeployLogType): string {
   return colors.text;
 }
 
-export function DeployLogsPane({ name, deployment, loading, error, supported, height, maxWidth, focused }: Props) {
-  const innerRows = Math.max(1, height - 3); // border + status line
-
+export function DeployLogsPane({ name, deployment, loading, error, supported, height, maxWidth, focused, scrollRef }: Props) {
   let body: ReactNode;
   if (!supported) {
     body = <text fg={colors.dim}>Deploy logs are available for applications only.</text>;
@@ -46,10 +46,9 @@ export function DeployLogsPane({ name, deployment, loading, error, supported, he
         </text>
       );
     } else {
-      const tail = visible.slice(-innerRows);
       body = (
-        <box flexDirection="column">
-          {tail.map((line, i) => {
+        <scrollbox ref={scrollRef} stickyScroll stickyStart="bottom" height={Math.max(1, height - 3)}>
+          {visible.map((line, i) => {
             const raw = (line.type === "command" ? "$ " : "") + line.text;
             const shown = raw.length > maxWidth ? raw.slice(0, maxWidth - 1) + "…" : raw || " ";
             return (
@@ -58,7 +57,7 @@ export function DeployLogsPane({ name, deployment, loading, error, supported, he
               </text>
             );
           })}
-        </box>
+        </scrollbox>
       );
     }
   }

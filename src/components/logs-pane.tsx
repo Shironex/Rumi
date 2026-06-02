@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { ScrollBoxRenderable } from "@opentui/core";
+import type { ReactNode, Ref } from "react";
 import type { CoolifyResource, ResourceKind } from "../coolify/types.ts";
 import { colors } from "../theme.ts";
 
@@ -11,6 +12,8 @@ interface Props {
   height: number;
   maxWidth: number;
   focused: boolean;
+  /** Lets the app scroll the tail programmatically (arrows / wheel). */
+  scrollRef?: Ref<ScrollBoxRenderable>;
 }
 
 function lineColor(line: string): string {
@@ -25,9 +28,7 @@ function unsupportedMessage(kind: ResourceKind): string {
   return `Coolify's API doesn't expose logs for ${noun} (applications only).`;
 }
 
-export function LogsPane({ resource, lines, loading, error, supported, height, maxWidth, focused }: Props) {
-  const innerRows = Math.max(1, height - 2);
-
+export function LogsPane({ resource, lines, loading, error, supported, height, maxWidth, focused, scrollRef }: Props) {
   let body: ReactNode;
   if (!supported) {
     body = <text fg={colors.dim}>{unsupportedMessage(resource.kind)}</text>;
@@ -36,10 +37,9 @@ export function LogsPane({ resource, lines, loading, error, supported, height, m
   } else if (loading && lines.length === 0) {
     body = <text fg={colors.dim}>Tailing…</text>;
   } else {
-    const tail = lines.slice(-innerRows);
     body = (
-      <box flexDirection="column">
-        {tail.map((line, i) => {
+      <scrollbox ref={scrollRef} stickyScroll stickyStart="bottom" height={Math.max(1, height - 2)}>
+        {lines.map((line, i) => {
           const shown = line.length > maxWidth ? line.slice(0, maxWidth - 1) + "…" : line || " ";
           return (
             <text key={i} fg={lineColor(line)}>
@@ -47,7 +47,7 @@ export function LogsPane({ resource, lines, loading, error, supported, height, m
             </text>
           );
         })}
-      </box>
+      </scrollbox>
     );
   }
 
