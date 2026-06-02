@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react";
 import { ConfigPane } from "./components/config-pane.tsx";
@@ -13,6 +13,7 @@ import { LogsPane } from "./components/logs-pane.tsx";
 import { Onboarding } from "./components/onboarding.tsx";
 import { ResourcesTable } from "./components/resources-table.tsx";
 import { ServersPane } from "./components/servers-pane.tsx";
+import { Splash } from "./components/splash.tsx";
 import { Toast } from "./components/toast.tsx";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
 import { type CoolifyResource, isTerminalStatus } from "./coolify/types.ts";
@@ -65,6 +66,8 @@ export function App() {
   const [contextOpen, setContextOpen] = useState(false);
   const [contextCursor, setContextCursor] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [splashSkipped, setSplashSkipped] = useState(false);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(USE_MOCK);
   const logScrollRef = useRef<ScrollBoxRenderable | null>(null);
   const { width, height } = useTerminalDimensions();
   const renderer = useRenderer();
@@ -80,16 +83,32 @@ export function App() {
   const noContexts = contexts.contexts.length === 0;
   const lastContext = Math.max(0, contexts.contexts.length - 1);
 
+  // Splash shows until the first fetch lands (and a brief floor passes so it
+  // doesn't just flash); any key skips it. Skipped entirely when no context.
+  const loaded = list.lastUpdated != null;
+  const showSplash = !noContexts && !splashSkipped && (!loaded || !minSplashElapsed);
+  useEffect(() => {
+    if (USE_MOCK) return;
+    const t = setTimeout(() => setMinSplashElapsed(true), 700);
+    return () => clearTimeout(t);
+  }, []);
+
   // Animate only when something is actually in motion (keeps the render quiet otherwise).
   const deployRunning =
     overlay?.kind === "deploy" && deployLogs.deployment != null && !isTerminalStatus(deployLogs.deployment.status);
-  const spinner = useSpinner(list.filtered.some((r) => r.state === "transitioning") || deployRunning);
+  const spinner = useSpinner(showSplash || list.filtered.some((r) => r.state === "transitioning") || deployRunning);
 
   // useKeyboard wraps this in useEffectEvent, so it always sees current state - no refs needed.
   useKeyboard((e) => {
     const quit = e.name === "q" || (e.ctrl && e.name === "c");
     const wantsDeployLog = e.sequence === "L" || (e.name === "l" && e.shift);
 
+    // 0) splash: any key skips it (quit still quits)
+    if (showSplash) {
+      if (quit) exitApp();
+      else setSplashSkipped(true);
+      return;
+    }
     // 1) filter input mode swallows everything
     if (list.filterMode) {
       list.handleFilterKey(e);
@@ -210,6 +229,10 @@ export function App() {
 
   const overlayHeight = overlay?.kind === "config" ? CONFIG_HEIGHT : LOGS_HEIGHT;
   const viewportHeight = Math.max(3, height - 7 - (overlayOpen ? overlayHeight : 0));
+
+  if (showSplash) {
+    return <Splash contextName={contexts.active?.name} error={list.error} spinner={spinner} />;
+  }
 
   return (
     <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
