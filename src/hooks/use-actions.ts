@@ -26,8 +26,11 @@ function verbOf(id: ActionId): string {
   return id.charAt(0).toUpperCase() + id.slice(1);
 }
 
+/** Called after a successful action; deploymentUuid is set when a build was queued. */
+type OnDone = (resource: CoolifyResource, id: ActionId, deploymentUuid?: string) => void;
+
 /** Owns the confirm-then-execute flow for state-changing actions. */
-export function useActions(ctx: CoolifyContext | undefined, onDone: () => void): ActionsApi {
+export function useActions(ctx: CoolifyContext | undefined, onDone: OnDone): ActionsApi {
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +57,15 @@ export function useActions(ctx: CoolifyContext | undefined, onDone: () => void):
     setError(null);
     void (async () => {
       try {
+        let deploymentUuid: string | undefined;
         if (!USE_MOCK && ctx) {
           const client = new CoolifyClient(ctx);
-          if (id === "deploy") await client.deploy(resource.uuid);
-          else await client.runAction(resource, id as LifecycleAction);
+          deploymentUuid =
+            id === "deploy" ? await client.deploy(resource.uuid) : await client.runAction(resource, id as LifecycleAction);
         }
         setBusy(false);
         setPending(null);
-        onDone();
+        onDone(resource, id, deploymentUuid);
       } catch (err) {
         setBusy(false);
         setError((err as Error).message);

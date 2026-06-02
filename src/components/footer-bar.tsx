@@ -21,11 +21,11 @@ export function FooterBar({ filterMode, filter, logsOpen, view }: Props) {
 
   let hints: string;
   if (logsOpen) {
-    hints = "tailing logs   l/esc close   q quit";
+    hints = "tailing   esc close   q quit";
   } else if (view === "servers") {
     hints = "↑↓/jk move   R refresh   c context   tab resources   q quit";
   } else {
-    hints = "↑↓/jk move   / filter   l logs   s/r/d start·restart·deploy   R refresh   c context   tab servers   q quit";
+    hints = "↑↓/jk move   / filter   l logs   L deploy   s/r/d start·restart·deploy   R refresh   c context   tab servers   q quit";
   }
   return <text fg={colors.dim}>{hints}</text>;
 }

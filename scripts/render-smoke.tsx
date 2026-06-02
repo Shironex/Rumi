@@ -62,6 +62,21 @@ const confirmFrame = a.captureCharFrame();
 assert(confirmFrame.includes("Restart this resource?"), "restart key opens the confirm modal");
 assert(confirmFrame.includes("y confirm"), "confirm modal shows the y/n prompt");
 
+// Confirming a restart on an app auto-opens the deploy/build log.
+a.mockInput.pressKey("y");
+await a.waitForFrame((f) => f.includes("deploy ·"), { maxPasses: 300 });
+const deployFrame = a.captureCharFrame();
+assert(deployFrame.includes("deploy ·"), "confirming restart auto-opens deploy logs");
+assert(deployFrame.includes("npm ci"), "deploy build lines render");
+assert(!deployFrame.includes("coolify-helper"), "hidden build steps are filtered out");
+
+// Deploy logs on demand (shift+l) without triggering an action.
+const dl = await testRender(<App />, { width: 160, height: 40 });
+await dl.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+dl.mockInput.pressKey("l", { shift: true });
+await dl.waitForFrame((f) => f.includes("deploy ·"), { maxPasses: 300 });
+assert(dl.captureCharFrame().includes("deploy ·"), "shift+l opens deploy logs on demand");
+
 // Context switcher modal - fresh App, real contexts loaded from the CLI config.
 const b = await testRender(<App />, { width: 160, height: 40 });
 await b.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
