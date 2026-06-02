@@ -8,16 +8,36 @@
     "dev": "bun run --watch src/index.tsx",
     "start": "bun run src/index.tsx",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",
     "smoke": "RUMI_MOCK=1 bun run scripts/render-smoke.tsx",
     "probe": "bun run scripts/probe.ts",
     "probe:servers": "bun run scripts/probe-servers.ts",
     "probe:deploy": "bun run scripts/probe-deploy.ts",
     "probe:env": "bun run scripts/probe-env.ts",
-    "make:splash": "bun run scripts/make-splash.ts"
+    "make:splash": "bun run scripts/make-splash.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bun": "latest",
-    "@types/react": "^19"
+    "@types/react": "^19",
+    "eslint": "^10.4.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3",
+    "typescript-eslint": "^8.60.1"
   },
   "peerDependencies": {
     "typescript": "^5"

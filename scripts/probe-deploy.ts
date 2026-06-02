@@ -30,16 +30,17 @@ const apps = resources.filter((r) => String(r.type) === "application");
 console.log(`applications: ${apps.length}`);
 
 let recentUuid: string | undefined;
-let histKeys: string[] = [];
 for (const app of apps) {
   const h = await get(`/api/v1/deployments/applications/${String(app.uuid)}`);
   const arr = (h.json as { deployments?: Array<Record<string, unknown>> })?.deployments ?? [];
   if (arr.length) {
     console.log(`\n${String(app.name)} (${String(app.uuid)}) -> ${arr.length} deployments`);
-    histKeys = Object.keys(arr[0]!).sort();
+    const histKeys = Object.keys(arr[0]!).sort();
     console.log("  entry keys:", histKeys.join(", "));
     for (const d of arr.slice(0, 5)) {
-      console.log(`   - ${String(d.deployment_uuid ?? d.uuid)} | status=${String(d.status)} | ${String(d.created_at ?? "")}`);
+      console.log(
+        `   - ${String(d.deployment_uuid ?? d.uuid)} | status=${String(d.status)} | ${String(d.created_at ?? "")}`,
+      );
     }
     recentUuid = String(arr[0]!.deployment_uuid ?? arr[0]!.uuid);
     const logs = arr[0]!.logs;
@@ -51,7 +52,11 @@ for (const app of apps) {
           console.log("  logs[] length:", parsed.length);
           if (parsed[0]) console.log("  logs[] entry keys:", Object.keys(parsed[0]).sort().join(", "));
           for (const e of parsed.slice(0, 4)) {
-            console.log(`   [${String((e as Record<string, unknown>).type)}] ${String((e as Record<string, unknown>).output).slice(0, 80).replace(/\n/g, "\\n")}`);
+            console.log(
+              `   [${String((e as Record<string, unknown>).type)}] ${String((e as Record<string, unknown>).output)
+                .slice(0, 80)
+                .replace(/\n/g, "\\n")}`,
+            );
           }
         }
       } catch {

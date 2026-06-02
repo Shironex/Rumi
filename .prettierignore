@@ -1,0 +1,7 @@
+node_modules
+dist
+out
+coverage
+bun.lock
+*.log
+src/assets/splash-art.ts

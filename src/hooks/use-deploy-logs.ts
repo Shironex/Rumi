@@ -46,7 +46,6 @@ export function useDeployLogs(
     }
 
     const controller = new AbortController();
-    let timer: ReturnType<typeof setInterval> | undefined;
     setState({ deployment: null, loading: true, error: null, supported: true });
 
     const load = async () => {
@@ -60,7 +59,7 @@ export function useDeployLogs(
         const waitingForTracked = Boolean(trackUuid) && !dep;
         setState({ deployment: dep, loading: waitingForTracked, error: null, supported: true });
         // Stop polling only once the deployment we're actually showing has settled.
-        if (dep && isTerminalStatus(dep.status) && timer) clearInterval(timer);
+        if (dep && isTerminalStatus(dep.status)) clearInterval(timer);
       } catch (err) {
         if (isAbortError(err, controller.signal)) return;
         setState({ deployment: null, loading: false, error: (err as Error).message, supported: true });
@@ -68,10 +67,10 @@ export function useDeployLogs(
     };
 
     void load();
-    timer = setInterval(load, POLL_MS);
+    const timer = setInterval(load, POLL_MS);
     return () => {
       controller.abort();
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
   }, [active, ctx, resource, trackUuid]);
 
