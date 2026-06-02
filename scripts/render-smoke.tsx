@@ -37,9 +37,11 @@ assert(frame.includes("detail"), "detail pane renders");
 assert(frame.includes("domains") || frame.includes("branch"), "detail fields render for selected app");
 assert(frame.includes("filter"), "footer hints render");
 
-// Logs overlay for an application (selection starts on lunofi-api).
+// Logs overlay for an application (selection starts on lunofi-api). Wait for the
+// log lines themselves, not just the pane header: the lines land a frame later
+// (set inside the hook's effect), so gating on the header alone races in CI.
 t.mockInput.pressKey("l");
-await t.waitForFrame((f) => f.includes("logs ·"), { maxPasses: 300 });
+await t.waitForFrame((f) => f.includes("listening on :3000") || f.includes("starting up"), { maxPasses: 300 });
 const appLogs = t.captureCharFrame();
 assert(appLogs.includes("logs ·"), "logs pane opens for an app");
 assert(appLogs.includes("listening on :3000") || appLogs.includes("starting up"), "log lines tail");
@@ -65,7 +67,7 @@ assert(confirmFrame.includes("y confirm"), "confirm modal shows the y/n prompt")
 
 // Confirming a restart on an app auto-opens the deploy/build log.
 a.mockInput.pressKey("y");
-await a.waitForFrame((f) => f.includes("deploy ·"), { maxPasses: 300 });
+await a.waitForFrame((f) => f.includes("npm ci"), { maxPasses: 300 });
 const deployFrame = a.captureCharFrame();
 assert(deployFrame.includes("deploy ·"), "confirming restart auto-opens deploy logs");
 assert(deployFrame.includes("npm ci"), "deploy build lines render");
@@ -97,7 +99,7 @@ assert(hp.captureCharFrame().includes("rumi · keys"), "? opens the help overlay
 const ci = await testRender(<App />, { width: 160, height: 40 });
 await ci.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 ci.mockInput.pressKey("e");
-await ci.waitForFrame((f) => f.includes("config ·"), { maxPasses: 300 });
+await ci.waitForFrame((f) => f.includes("DATABASE_URL"), { maxPasses: 300 });
 const cfgFrame = ci.captureCharFrame();
 assert(cfgFrame.includes("config ·"), "e opens the config + env inspector");
 assert(cfgFrame.includes("DATABASE_URL"), "env keys render in the inspector");
@@ -127,7 +129,7 @@ assert(o.captureCharFrame().includes("No Coolify instance is configured"), "onbo
 const s = await testRender(<App />, { width: 160, height: 40 });
 await s.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 s.mockInput.pressTab();
-await s.waitForFrame((f) => f.includes("servers ("), { maxPasses: 300 });
+await s.waitForFrame((f) => f.includes("production-main"), { maxPasses: 300 });
 const serversFrame = s.captureCharFrame();
 assert(serversFrame.includes("servers ("), "tab switches to the servers view");
 assert(serversFrame.includes("production-main"), "server row renders");
