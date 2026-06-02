@@ -76,7 +76,7 @@ rumi reads its instances from the same file as the official [Coolify CLI](https:
 }
 ```
 
-Create an API token in Coolify under **Settings → API**, and make sure the API is enabled and your IP is allow-listed there. A token with the `read:sensitive` scope is needed to reveal env values; without it, rumi shows env keys only.
+Create an API token in Coolify, then enable the API and allow-list your IP under **Settings → Advanced → API Settings**. A token with the `read:sensitive` scope is needed to reveal env values; without it, rumi shows env keys only.
 
 ## Usage
 

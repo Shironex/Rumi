@@ -3,6 +3,14 @@
 A living plan for rumi. It is early and moves fast, so this list will change.
 Dates are intentionally absent; things ship when they are ready.
 
+## Unreleased
+
+- **Clearer empty and error states.** Unreachable instances now surface an
+  actionable message (on the splash and in every pane) instead of a raw fetch
+  error; a misconfigured URL that returns non-JSON is named as such; a token
+  without `read:sensitive` is flagged in the config inspector; and apps with no
+  log output or no deployments get explicit empty states instead of a blank pane.
+
 ## Shipped (v0.1.0)
 
 - Live resource list for apps, services, and databases with health status,
@@ -29,8 +37,6 @@ Dates are intentionally absent; things ship when they are ready.
   the self-update rename dance and terminal restore on quit.
 - **Release hardening.** Confirm the multi-arch release pipeline end to end and
   smooth out anything the first real release surfaces.
-- **Better empty and error states.** Clearer messaging when a context is
-  unreachable, a token lacks scope, or a resource has no logs.
 - **More log coverage.** Service and database logs where the Coolify API exposes
   them, not just applications.
 
