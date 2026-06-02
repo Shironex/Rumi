@@ -3,7 +3,7 @@ import { type CoolifyContext, loadContexts } from "../config.ts";
 import { loadSettings, saveSettings } from "../settings.ts";
 import { clamp } from "../util.ts";
 
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 function loadSafe(): CoolifyContext[] {
   try {

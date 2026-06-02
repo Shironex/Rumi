@@ -4,7 +4,7 @@ import { CoolifyClient } from "../coolify/client.ts";
 import { mockConfig, mockEnvVars } from "../coolify/mock.ts";
 import type { ConfigField, CoolifyResource, EnvVar } from "../coolify/types.ts";
 
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface ConfigState {
   config: ConfigField[];

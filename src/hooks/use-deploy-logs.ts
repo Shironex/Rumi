@@ -5,7 +5,7 @@ import { mockDeployment } from "../coolify/mock.ts";
 import { type CoolifyResource, type Deployment, isTerminalStatus } from "../coolify/types.ts";
 
 const POLL_MS = 2500;
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface DeployLogsState {
   deployment: Deployment | null;

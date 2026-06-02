@@ -2,7 +2,7 @@
  * Headless render smoke: mount the real <App/> against OpenTUI's in-memory test
  * renderer and assert the panes paint (catches reconciler/layout throws a
  * bundle/typecheck can't), including the logs overlay driven via mock keypresses.
- * Run: KANRISHA_MOCK=1 bun run scripts/render-smoke.tsx
+ * Run: RUMI_MOCK=1 bun run scripts/render-smoke.tsx
  */
 import { testRender } from "@opentui/react/test-utils";
 import { App } from "../src/app.tsx";
@@ -11,8 +11,8 @@ import { Onboarding } from "../src/components/onboarding.tsx";
 import { Splash } from "../src/components/splash.tsx";
 import { mockResources } from "../src/coolify/mock.ts";
 
-if (process.env.KANRISHA_MOCK !== "1") {
-  console.error("Run with KANRISHA_MOCK=1 so it uses sample data, not the live API.");
+if (process.env.RUMI_MOCK !== "1") {
+  console.error("Run with RUMI_MOCK=1 so it uses sample data, not the live API.");
   process.exit(1);
 }
 
@@ -28,7 +28,7 @@ const t = await testRender(<App />, { width: 160, height: 40 });
 await t.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 const frame = t.captureCharFrame();
 
-assert(frame.includes("kanrisha"), "header renders");
+assert(frame.includes("rumi"), "header renders");
 assert(frame.includes("c context"), "context-switch hint in footer");
 assert(frame.includes("shini"), "configured context shows");
 assert(frame.includes("resources"), "resources pane renders");
@@ -90,8 +90,8 @@ assert(b.captureCharFrame().includes("switch context"), "c opens the context swi
 const hp = await testRender(<App />, { width: 160, height: 40 });
 await hp.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 hp.mockInput.pressKey("?");
-await hp.waitForFrame((f) => f.includes("kanrisha · keys"), { maxPasses: 300 });
-assert(hp.captureCharFrame().includes("kanrisha · keys"), "? opens the help overlay");
+await hp.waitForFrame((f) => f.includes("rumi · keys"), { maxPasses: 300 });
+assert(hp.captureCharFrame().includes("rumi · keys"), "? opens the help overlay");
 
 // Config + env inspector opens on e (selection starts on lunofi-api, an app).
 const ci = await testRender(<App />, { width: 160, height: 40 });
@@ -120,7 +120,7 @@ assert(splashFrame.includes("press any key to skip"), "splash skip hint renders"
 
 // Onboarding empty state - rendered standalone (only paints at 0 contexts).
 const o = await testRender(<Onboarding />, { width: 100, height: 16 });
-await o.waitForFrame((f) => f.includes("Welcome to kanrisha"), { maxPasses: 200 });
+await o.waitForFrame((f) => f.includes("Welcome to rumi"), { maxPasses: 200 });
 assert(o.captureCharFrame().includes("No Coolify instance is configured"), "onboarding empty state renders");
 
 // Servers view - fresh App, tab switches resources -> servers.

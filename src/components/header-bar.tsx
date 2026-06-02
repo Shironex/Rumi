@@ -20,7 +20,7 @@ export function HeaderBar({ contextName, loading, error, running, problems, last
   return (
     <box flexDirection="row">
       <text fg={colors.accent} attributes={TextAttributes.BOLD}>
-        kanrisha
+        rumi
       </text>
       <text fg={colors.dim}>{`  ${contextName ?? "no context"}  `}</text>
       {error ? (

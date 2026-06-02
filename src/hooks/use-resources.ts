@@ -5,7 +5,7 @@ import { mockResources } from "../coolify/mock.ts";
 import { type CoolifyResource, sortResources } from "../coolify/types.ts";
 
 const POLL_MS = 5000;
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface ResourcesState {
   resources: CoolifyResource[];

@@ -6,7 +6,7 @@ import type { CoolifyServer } from "../coolify/types.ts";
 import { clamp } from "../util.ts";
 
 const POLL_MS = 10000;
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface ServersApi {
   servers: CoolifyServer[];

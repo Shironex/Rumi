@@ -4,7 +4,7 @@ import type { ActionId, LifecycleAction } from "../coolify/actions.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import type { CoolifyResource } from "../coolify/types.ts";
 
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface PendingAction {
   resource: CoolifyResource;

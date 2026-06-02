@@ -36,7 +36,7 @@ type Overlay =
 
 const LOGS_HEIGHT = 14;
 const CONFIG_HEIGHT = 18;
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export function App() {
   const contexts = useContexts();

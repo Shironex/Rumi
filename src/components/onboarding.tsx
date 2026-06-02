@@ -9,7 +9,7 @@ export function Onboarding() {
   return (
     <box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
       <text fg={colors.accent} attributes={TextAttributes.BOLD}>
-        Welcome to kanrisha
+        Welcome to rumi
       </text>
       <text> </text>
       <text fg={colors.text}>No Coolify instance is configured yet.</text>

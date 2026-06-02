@@ -65,7 +65,7 @@ export function HelpOverlay() {
         paddingBottom={1}
       >
         <text fg={colors.accent} attributes={TextAttributes.BOLD}>
-          kanrisha · keys
+          rumi · keys
         </text>
         <text> </text>
         {SECTIONS.map((section) => (

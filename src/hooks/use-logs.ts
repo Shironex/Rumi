@@ -6,7 +6,7 @@ import type { CoolifyResource } from "../coolify/types.ts";
 
 const LOG_POLL_MS = 3000;
 const LOG_LINES = 200;
-const USE_MOCK = process.env.KANRISHA_MOCK === "1";
+const USE_MOCK = process.env.RUMI_MOCK === "1";
 
 export interface LogsState {
   lines: string[];

@@ -86,7 +86,7 @@ export function mockServers(): CoolifyServer[] {
   ];
 }
 
-/** Sample data for offline UI work. Enable with KANRISHA_MOCK=1. */
+/** Sample data for offline UI work. Enable with RUMI_MOCK=1. */
 export function mockResources(): CoolifyResource[] {
   return SAMPLES.map(([name, rawType, status], i) => {
     const isApp = rawType === "application";

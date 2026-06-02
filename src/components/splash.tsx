@@ -29,7 +29,7 @@ export function Splash({ contextName, error, spinner }: Props) {
       <text> </text>
       {/* block font is 6 rows; reserve them so the tagline can't overlap the baseline. */}
       <box height={6} flexShrink={0} alignItems="center">
-        <ascii-font text="kanrisha" font="block" color={[colors.accent, "#a371f7"]} />
+        <ascii-font text="rumi" font="block" color={[colors.accent, "#ff79c6"]} />
       </box>
       <text> </text>
       <text fg={colors.dim}>k9s-style control for Coolify</text>

@@ -7,11 +7,11 @@ export const colors = {
   transitioning: "#d29922",
   degraded: "#d29922",
   unknown: "#8b949e",
-  accent: "#58a6ff",
+  accent: "#bd93f9",
   text: "#e6edf3",
   dim: "#8b949e",
   border: "#30363d",
-  selectedBg: "#1f6feb",
+  selectedBg: "#7c3aed",
   selectedFg: "#ffffff",
   modalBg: "#161b22",
 } as const;
