@@ -1,0 +1,62 @@
+name: release
+
+# Tag a version to cut a release, e.g. `git tag v0.1.0 && git push origin v0.1.0`.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            target: darwin-arm64
+          - runner: macos-13
+            target: darwin-x64
+          - runner: ubuntu-latest
+            target: linux-x64
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      # Stamp the tag into the version constant so `rumi --version` matches the release.
+      - name: Stamp version
+        shell: bash
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          sed -i.bak 's/VERSION = "[^"]*"/VERSION = "'"$v"'"/' src/version.ts && rm -f src/version.ts.bak
+          sed -i.bak 's/"version": "[^"]*"/"version": "'"$v"'"/' package.json && rm -f package.json.bak
+      - name: Build (native, no cross-compile — OpenTUI ships per-platform native modules)
+        run: bun build --compile ./src/index.tsx --outfile "rumi-${{ matrix.target }}"
+      - name: Ad-hoc sign (macOS)
+        if: startsWith(matrix.runner, 'macos')
+        run: codesign --force --sign - "rumi-${{ matrix.target }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rumi-${{ matrix.target }}
+          path: rumi-${{ matrix.target }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
