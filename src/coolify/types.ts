@@ -29,6 +29,56 @@ export interface CoolifyResource {
   meta: ResourceMeta;
 }
 
+/** One line of build/deploy output. `command` lines are the shell steps Coolify ran. */
+export type DeployLogType = "stdout" | "stderr" | "command";
+
+export interface DeployLogLine {
+  text: string;
+  type: DeployLogType;
+  /** Coolify marks internal/debug steps hidden; the web UI omits them by default. */
+  hidden: boolean;
+}
+
+export interface Deployment {
+  uuid: string;
+  /** Raw status: queued | in_progress | finished | failed | cancelled-by-user | ... */
+  status: string;
+  commit?: string;
+  commitMessage?: string;
+  lines: DeployLogLine[];
+}
+
+const TERMINAL_STATUSES = ["finished", "failed", "error"];
+
+/** True once a deployment has stopped progressing (used to halt polling). */
+export function isTerminalStatus(status: string): boolean {
+  const s = status.toLowerCase();
+  return TERMINAL_STATUSES.includes(s) || s.includes("cancel");
+}
+
+interface RawDeployLog {
+  output?: string;
+  type?: string;
+  hidden?: boolean;
+}
+
+/** Coolify stores deploy logs as a JSON-encoded string of typed entries. */
+export function parseDeployLogs(raw: string | undefined): DeployLogLine[] {
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  return (parsed as RawDeployLog[]).map((e) => ({
+    text: typeof e.output === "string" ? e.output : "",
+    type: e.type === "stderr" ? "stderr" : e.type === "command" ? "command" : "stdout",
+    hidden: e.hidden === true,
+  }));
+}
+
 /** A Coolify host, from GET /api/v1/servers (separate from /resources). */
 export interface CoolifyServer {
   uuid: string;

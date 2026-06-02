@@ -1,6 +1,21 @@
 import type { CoolifyContext } from "../config.ts";
 import { actionSegment, type LifecycleAction } from "./actions.ts";
-import { type CoolifyResource, type CoolifyServer, normalizeKind, parseState } from "./types.ts";
+import {
+  type CoolifyResource,
+  type CoolifyServer,
+  type Deployment,
+  normalizeKind,
+  parseDeployLogs,
+  parseState,
+} from "./types.ts";
+
+interface RawDeployment {
+  deployment_uuid?: string;
+  status?: string;
+  commit?: string | null;
+  commit_message?: string | null;
+  logs?: string;
+}
 
 interface RawServer {
   uuid?: string;
@@ -83,22 +98,67 @@ export class CoolifyClient {
     return data.logs ?? "";
   }
 
-  /** start / stop / restart a resource. Coolify accepts POST (and GET) on these. */
-  async runAction(resource: CoolifyResource, action: LifecycleAction, signal?: AbortSignal): Promise<void> {
+  /**
+   * start / stop / restart a resource (Coolify accepts POST). Returns the
+   * deployment_uuid when the action queued a build (app start/restart), else undefined.
+   */
+  async runAction(resource: CoolifyResource, action: LifecycleAction, signal?: AbortSignal): Promise<string | undefined> {
     const segment = actionSegment(resource.kind);
     if (!segment) throw new Error(`No lifecycle endpoint for a ${resource.kind} resource.`);
-    await this.post(`/api/v1/${segment}/${resource.uuid}/${action}`, signal);
+    const body = await this.post(`/api/v1/${segment}/${resource.uuid}/${action}`, signal);
+    return extractDeploymentUuid(body);
   }
 
-  /** Trigger a (re)deploy by uuid. force=false reuses the build cache where possible. */
-  async deploy(uuid: string, signal?: AbortSignal): Promise<void> {
-    await this.post(`/api/v1/deploy?uuid=${encodeURIComponent(uuid)}&force=false`, signal);
+  /** Trigger a (re)deploy by uuid; returns the queued deployment_uuid. */
+  async deploy(uuid: string, signal?: AbortSignal): Promise<string | undefined> {
+    const body = await this.post(`/api/v1/deploy?uuid=${encodeURIComponent(uuid)}&force=false`, signal);
+    return extractDeploymentUuid(body);
   }
 
-  private async post(path: string, signal?: AbortSignal): Promise<void> {
+  /** Recent deployments for an app, newest first; each carries its parsed build log. */
+  async getDeployments(appUuid: string, take: number, signal?: AbortSignal): Promise<Deployment[]> {
+    const res = await fetch(`${this.ctx.fqdn}/api/v1/deployments/applications/${appUuid}?take=${take}`, {
+      headers: this.headers(),
+      signal,
+    });
+    if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
+    const data = (await res.json()) as { deployments?: RawDeployment[] };
+    return (data.deployments ?? []).map(toDeployment);
+  }
+
+  private async post(path: string, signal?: AbortSignal): Promise<unknown> {
     const res = await fetch(`${this.ctx.fqdn}${path}`, { method: "POST", headers: this.headers(), signal });
     if (!res.ok) throw new CoolifyApiError(res.status, await res.text());
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return {};
+    }
   }
+}
+
+/** Pull a deployment_uuid out of an action response (top-level or deployments[0]). */
+function extractDeploymentUuid(body: unknown): string | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const b = body as Record<string, unknown>;
+  if (typeof b.deployment_uuid === "string") return b.deployment_uuid;
+  const deps = b.deployments;
+  if (Array.isArray(deps) && deps[0] && typeof deps[0] === "object") {
+    const first = deps[0] as Record<string, unknown>;
+    if (typeof first.deployment_uuid === "string") return first.deployment_uuid;
+  }
+  return undefined;
+}
+
+function toDeployment(raw: RawDeployment): Deployment {
+  return {
+    uuid: raw.deployment_uuid ?? "",
+    status: raw.status ?? "unknown",
+    commit: cleanStr(raw.commit),
+    commitMessage: cleanStr(raw.commit_message),
+    lines: parseDeployLogs(raw.logs),
+  };
 }
 
 function toServer(raw: RawServer): CoolifyServer {

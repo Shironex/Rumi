@@ -1,4 +1,4 @@
-import { type CoolifyResource, type CoolifyServer, normalizeKind, parseState } from "./types.ts";
+import { type CoolifyResource, type CoolifyServer, type Deployment, normalizeKind, parseState } from "./types.ts";
 
 const SAMPLES: ReadonlyArray<readonly [name: string, rawType: string, status: string]> = [
   ["lunofi-api", "application", "running:healthy"],
@@ -22,6 +22,25 @@ export function mockLogs(name: string): string[] {
     `[12:00:06] ERROR upstream timeout, retrying (1/3)`,
     `[12:00:07] INFO  upstream reconnected`,
   ];
+}
+
+/** Sample deployment + build log for offline UI work. */
+export function mockDeployment(): Deployment {
+  return {
+    uuid: "dep-mock",
+    status: "finished",
+    commit: "a1b2c3d4",
+    commitMessage: "tidy build pipeline",
+    lines: [
+      { text: "Starting deployment of lunofi/web:main", type: "stdout", hidden: false },
+      { text: "sudo docker run --rm coolify-helper", type: "command", hidden: true },
+      { text: "#1 [internal] load build definition", type: "stdout", hidden: false },
+      { text: "npm ci", type: "command", hidden: false },
+      { text: "added 412 packages in 9s", type: "stdout", hidden: false },
+      { text: "WARN deprecated transitive dep", type: "stderr", hidden: false },
+      { text: "New container started. Deployment finished.", type: "stdout", hidden: false },
+    ],
+  };
 }
 
 /** Sample servers for offline UI work. */
