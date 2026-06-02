@@ -22,8 +22,15 @@ interface RawConfig {
   instances?: RawInstance[];
 }
 
-/** Same file the official Coolify CLI uses, so contexts are shared for free. */
-export const COOLIFY_CONFIG_PATH = join(homedir(), ".config", "coolify", "config.json");
+/**
+ * Same file the official Coolify CLI uses, so contexts are shared for free.
+ * The CLI hardcodes `~/.config/coolify` on Unix and `%APPDATA%\coolify` on
+ * Windows (coollabsio/coolify-cli internal/config.Path), so we match both.
+ */
+export const COOLIFY_CONFIG_PATH =
+  process.platform === "win32"
+    ? join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "coolify", "config.json")
+    : join(homedir(), ".config", "coolify", "config.json");
 
 export function loadContexts(path: string = COOLIFY_CONFIG_PATH): CoolifyContext[] {
   const raw = JSON.parse(readFileSync(path, "utf8")) as RawConfig;

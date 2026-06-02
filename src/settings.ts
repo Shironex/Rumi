@@ -2,8 +2,11 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-/** Rumi-owned config, separate from the shared Coolify CLI config. */
-export const RUMI_CONFIG_PATH = join(homedir(), ".config", "rumi", "config.json");
+/** Rumi-owned config, separate from the shared Coolify CLI config (Windows uses %APPDATA%). */
+export const RUMI_CONFIG_PATH =
+  process.platform === "win32"
+    ? join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "rumi", "config.json")
+    : join(homedir(), ".config", "rumi", "config.json");
 
 export interface RumiSettings {
   /** Name of the last-selected context, restored on next launch. */
