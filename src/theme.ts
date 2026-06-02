@@ -13,6 +13,7 @@ export const colors = {
   border: "#30363d",
   selectedBg: "#1f6feb",
   selectedFg: "#ffffff",
+  modalBg: "#161b22",
 } as const;
 
 export function stateColor(state: ResourceState): string {
