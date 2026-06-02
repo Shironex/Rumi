@@ -34,6 +34,15 @@ switch (arg) {
     await runUpdate();
     break;
   default: {
+    // Best-effort cleanup of the previous binary left behind by a Windows self-update.
+    if (process.platform === "win32") {
+      try {
+        const { rmSync } = await import("node:fs");
+        rmSync(`${process.execPath}.old`, { force: true });
+      } catch {
+        // ignore — the old binary may still be locked; next launch retries.
+      }
+    }
     const renderer = await createCliRenderer();
     createRoot(renderer).render(<App />);
   }

@@ -15,13 +15,17 @@ jobs:
       matrix:
         include:
           - runner: macos-14
-            target: darwin-arm64
+            asset: rumi-darwin-arm64
           - runner: macos-13
-            target: darwin-x64
+            asset: rumi-darwin-x64
           - runner: ubuntu-latest
-            target: linux-x64
+            asset: rumi-linux-x64
           - runner: ubuntu-24.04-arm
-            target: linux-arm64
+            asset: rumi-linux-arm64
+          # Windows is experimental: only published if the smoke is green on the
+          # runner (proves the OpenTUI win32 native module loads + the tree mounts).
+          - runner: windows-latest
+            asset: rumi-windows-x64.exe
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -36,15 +40,17 @@ jobs:
           v="${GITHUB_REF_NAME#v}"
           sed -i.bak 's/VERSION = "[^"]*"/VERSION = "'"$v"'"/' src/version.ts && rm -f src/version.ts.bak
           sed -i.bak 's/"version": "[^"]*"/"version": "'"$v"'"/' package.json && rm -f package.json.bak
+      # Gate the binary on a passing render: don't publish a crash-on-launch build.
+      - run: bun run smoke
       - name: Build (native, no cross-compile — OpenTUI ships per-platform native modules)
-        run: bun build --compile ./src/index.tsx --outfile "rumi-${{ matrix.target }}"
+        run: bun build --compile ./src/index.tsx --outfile "${{ matrix.asset }}"
       - name: Ad-hoc sign (macOS)
         if: startsWith(matrix.runner, 'macos')
-        run: codesign --force --sign - "rumi-${{ matrix.target }}"
+        run: codesign --force --sign - "${{ matrix.asset }}"
       - uses: actions/upload-artifact@v4
         with:
-          name: rumi-${{ matrix.target }}
-          path: rumi-${{ matrix.target }}
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
 
   release:
     needs: build

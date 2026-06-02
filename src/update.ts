@@ -1,13 +1,21 @@
-import { chmodSync, renameSync, writeFileSync } from "node:fs";
+import { chmodSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { VERSION } from "./version.ts";
 
 const REPO = "Shironex/Rumi";
 
-/** Release asset name for the running platform, e.g. "rumi-darwin-arm64". */
+/** Release asset name for the running platform, e.g. "rumi-darwin-arm64" / "rumi-windows-x64.exe". */
 function assetName(): string | null {
-  const os = process.platform === "darwin" ? "darwin" : process.platform === "linux" ? "linux" : null;
+  const os =
+    process.platform === "darwin"
+      ? "darwin"
+      : process.platform === "linux"
+        ? "linux"
+        : process.platform === "win32"
+          ? "windows"
+          : null;
   const arch = process.arch === "arm64" ? "arm64" : process.arch === "x64" ? "x64" : null;
-  return os && arch ? `rumi-${os}-${arch}` : null;
+  if (!os || !arch) return null;
+  return `rumi-${os}-${arch}${os === "windows" ? ".exe" : ""}`;
 }
 
 async function latestTag(): Promise<string> {
@@ -56,21 +64,29 @@ export async function runUpdate(): Promise<void> {
     return;
   }
 
-  // Atomic replace: write next to the current binary, then rename over it. The
-  // running process keeps its open inode, so swapping the path is safe.
   const target = process.execPath;
-  const tmp = `${target}.new`;
   try {
-    writeFileSync(tmp, new Uint8Array(bytes));
-    chmodSync(tmp, 0o755);
-    if (process.platform === "darwin") {
-      // A downloaded binary can carry a quarantine xattr that blocks exec.
-      Bun.spawnSync(["xattr", "-dr", "com.apple.quarantine", tmp]);
+    if (process.platform === "win32") {
+      // Windows locks a running .exe: it can't be overwritten or deleted, but it
+      // CAN be renamed. Move the running binary aside, write the new one in its
+      // place; the leftover .old is cleaned up on next launch (see index.tsx).
+      const old = `${target}.old`;
+      rmSync(old, { force: true });
+      renameSync(target, old);
+      writeFileSync(target, new Uint8Array(bytes));
+    } else {
+      // Atomic replace: write alongside, then rename over. The running process
+      // keeps its open inode, so swapping the path is safe.
+      const tmp = `${target}.new`;
+      writeFileSync(tmp, new Uint8Array(bytes));
+      chmodSync(tmp, 0o755);
+      // A downloaded binary can carry a quarantine xattr that blocks exec on macOS.
+      if (process.platform === "darwin") Bun.spawnSync(["xattr", "-dr", "com.apple.quarantine", tmp]);
+      renameSync(tmp, target);
     }
-    renameSync(tmp, target);
   } catch (err) {
     console.error(`Could not replace ${target}: ${(err as Error).message}`);
-    console.error("If rumi is installed in a system dir, reinstall via install.sh instead.");
+    console.error("If rumi is installed in a system dir, reinstall instead.");
     return;
   }
 

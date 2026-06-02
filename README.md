@@ -32,6 +32,10 @@ This installs the right binary for your platform into `~/.local/bin` (override w
 
 Prebuilt binaries are published for **macOS** (arm64, x64) and **Linux** (x64, arm64) on the [releases page](https://github.com/Shironex/Rumi/releases).
 
+### Windows (experimental)
+
+Windows builds are published but not yet verified in a real terminal — treat them as experimental. Download `rumi-windows-x64.exe` from the [releases page](https://github.com/Shironex/Rumi/releases), put it somewhere on your `PATH`, and run `rumi`. `rumi update` works on Windows too (it reads contexts from `%APPDATA%\coolify\config.json`, the same file the Coolify CLI uses).
+
 ## Configuration
 
 rumi reads its instances from the same file as the official [Coolify CLI](https://coolify.io/docs/get-started/cli) — `~/.config/coolify/config.json`:
