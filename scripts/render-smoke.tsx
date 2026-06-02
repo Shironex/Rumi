@@ -84,6 +84,13 @@ b.mockInput.pressKey("c");
 await b.waitForFrame((f) => f.includes("switch context"), { maxPasses: 300 });
 assert(b.captureCharFrame().includes("switch context"), "c opens the context switcher");
 
+// Help overlay opens on ?.
+const hp = await testRender(<App />, { width: 160, height: 40 });
+await hp.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+hp.mockInput.pressKey("?");
+await hp.waitForFrame((f) => f.includes("kanrisha · keys"), { maxPasses: 300 });
+assert(hp.captureCharFrame().includes("kanrisha · keys"), "? opens the help overlay");
+
 // Onboarding empty state - rendered standalone (only paints at 0 contexts).
 const o = await testRender(<Onboarding />, { width: 100, height: 16 });
 await o.waitForFrame((f) => f.includes("Welcome to kanrisha"), { maxPasses: 200 });

@@ -7,6 +7,7 @@ import { DeployLogsPane } from "./components/deploy-logs-pane.tsx";
 import { DetailPane } from "./components/detail-pane.tsx";
 import { FooterBar } from "./components/footer-bar.tsx";
 import { HeaderBar } from "./components/header-bar.tsx";
+import { HelpOverlay } from "./components/help-overlay.tsx";
 import { LogsPane } from "./components/logs-pane.tsx";
 import { Onboarding } from "./components/onboarding.tsx";
 import { ResourcesTable } from "./components/resources-table.tsx";
@@ -52,6 +53,7 @@ export function App() {
   });
   const [contextOpen, setContextOpen] = useState(false);
   const [contextCursor, setContextCursor] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const logScrollRef = useRef<ScrollBoxRenderable | null>(null);
   const { width, height } = useTerminalDimensions();
 
@@ -87,7 +89,13 @@ export function App() {
       }
       return;
     }
-    // 4) logs / deploy-logs overlay: esc/key closes; arrows scroll history (sticky auto-tails)
+    // 4) help overlay: esc / ? dismisses (quit stays live)
+    if (helpOpen) {
+      if (quit) process.exit(0);
+      if (e.name === "escape" || e.name === "?" || e.sequence === "?") setHelpOpen(false);
+      return;
+    }
+    // 5) logs / deploy-logs overlay: esc/key closes; arrows scroll history (sticky auto-tails)
     if (overlay) {
       if (quit) process.exit(0);
       if (e.name === "escape") setOverlay(null);
@@ -100,8 +108,12 @@ export function App() {
       return;
     }
 
-    // 5) global - keys live in every view
+    // 6) global - keys live in every view
     if (quit) process.exit(0);
+    if (e.name === "?" || e.sequence === "?") {
+      setHelpOpen(true);
+      return;
+    }
     if (e.name === "tab") {
       setView((v) => (v === "resources" ? "servers" : "resources"));
       return;
@@ -118,7 +130,7 @@ export function App() {
       return;
     }
 
-    // 6) resources-view-only keys
+    // 7) resources-view-only keys
     if (view === "resources") {
       if (e.name === "/" || e.sequence === "/") {
         list.startFilter();
@@ -154,7 +166,7 @@ export function App() {
       }
     }
 
-    // 7) navigation, scoped to the active view
+    // 8) navigation, scoped to the active view
     const dir = e.name === "up" || e.name === "k" ? -1 : e.name === "down" || e.name === "j" ? 1 : 0;
     if (dir !== 0) {
       if (view === "servers") servers.move(dir);
@@ -244,6 +256,8 @@ export function App() {
       {contextOpen ? (
         <ContextModal contexts={contexts.contexts} activeIndex={contexts.activeIndex} cursor={contextCursor} />
       ) : null}
+
+      {helpOpen ? <HelpOverlay /> : null}
     </box>
   );
 }
