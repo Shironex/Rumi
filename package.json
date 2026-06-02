@@ -8,7 +8,8 @@
     "start": "bun run src/index.tsx",
     "typecheck": "tsc --noEmit",
     "smoke": "KANRISHA_MOCK=1 bun run scripts/render-smoke.tsx",
-    "probe": "bun run scripts/probe.ts"
+    "probe": "bun run scripts/probe.ts",
+    "probe:servers": "bun run scripts/probe-servers.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
