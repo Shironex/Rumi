@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { ScrollBoxRenderable } from "@opentui/core";
-import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react";
 import { ConfigPane } from "./components/config-pane.tsx";
 import { ConfirmModal } from "./components/confirm-modal.tsx";
 import { ContextModal } from "./components/context-modal.tsx";
@@ -67,6 +67,15 @@ export function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const logScrollRef = useRef<ScrollBoxRenderable | null>(null);
   const { width, height } = useTerminalDimensions();
+  const renderer = useRenderer();
+
+  // Tear the renderer down before exiting so the terminal is restored (mouse
+  // tracking off, alt-screen left, cursor shown). A bare process.exit(0) skips
+  // OpenTUI's beforeExit handler and leaks mouse escape codes into the shell.
+  const exitApp = () => {
+    renderer.destroy();
+    process.exit(0);
+  };
 
   const noContexts = contexts.contexts.length === 0;
   const lastContext = Math.max(0, contexts.contexts.length - 1);
@@ -88,14 +97,14 @@ export function App() {
     }
     // 2) confirm modal: y confirms, esc / n cancels (never Enter, too reflexive)
     if (actions.pending) {
-      if (quit) process.exit(0);
+      if (quit) exitApp();
       if (e.name === "y") actions.confirm();
       else if (e.name === "escape" || e.name === "n") actions.cancel();
       return;
     }
     // 3) context switcher modal
     if (contextOpen) {
-      if (quit) process.exit(0);
+      if (quit) exitApp();
       if (e.name === "escape" || e.name === "c") setContextOpen(false);
       else if (e.name === "up" || e.name === "k") setContextCursor((c) => clamp(c - 1, 0, lastContext));
       else if (e.name === "down" || e.name === "j") setContextCursor((c) => clamp(c + 1, 0, lastContext));
@@ -107,13 +116,13 @@ export function App() {
     }
     // 4) help overlay: esc / ? dismisses (quit stays live)
     if (helpOpen) {
-      if (quit) process.exit(0);
+      if (quit) exitApp();
       if (e.name === "escape" || e.name === "?" || e.sequence === "?") setHelpOpen(false);
       return;
     }
     // 5) logs / deploy-logs overlay: esc/key closes; arrows scroll history (sticky auto-tails)
     if (overlay) {
-      if (quit) process.exit(0);
+      if (quit) exitApp();
       if (e.name === "escape") setOverlay(null);
       else if (overlay.kind === "runtime" && e.name === "l") setOverlay(null);
       else if (overlay.kind === "deploy" && wantsDeployLog) setOverlay(null);
@@ -127,7 +136,7 @@ export function App() {
     }
 
     // 6) global - keys live in every view
-    if (quit) process.exit(0);
+    if (quit) exitApp();
     if (e.name === "?" || e.sequence === "?") {
       setHelpOpen(true);
       return;
