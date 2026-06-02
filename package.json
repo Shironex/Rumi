@@ -4,10 +4,15 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run --watch src/index.tsx"
+    "dev": "bun run --watch src/index.tsx",
+    "start": "bun run src/index.tsx",
+    "typecheck": "tsc --noEmit",
+    "smoke": "KANRISHA_MOCK=1 bun run scripts/render-smoke.tsx",
+    "probe": "bun run scripts/probe.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19"
   },
   "peerDependencies": {
     "typescript": "^5"
