@@ -1,0 +1,41 @@
+import { SPLASH_ART } from "../assets/splash-art.ts";
+import { colors } from "../theme.ts";
+
+interface Props {
+  contextName?: string;
+  error: string | null;
+  /** Current spinner frame for the status line. */
+  spinner: string;
+}
+
+/** Full-screen ASCII splash shown while the first resource fetch runs. */
+export function Splash({ contextName, error, spinner }: Props) {
+  const status = error
+    ? `could not reach ${contextName ?? "the instance"}`
+    : `connecting to ${contextName ?? "Coolify"}…`;
+
+  return (
+    <box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+      {/* Art rows live in their own left-aligned box so the picture holds together
+          while the box itself is centered as a single unit. */}
+      <box flexDirection="column">
+        {SPLASH_ART.map((line, i) => (
+          <text key={i} fg={colors.dim}>
+            {line}
+          </text>
+        ))}
+      </box>
+
+      <text> </text>
+      {/* block font is 6 rows; reserve them so the tagline can't overlap the baseline. */}
+      <box height={6} flexShrink={0} alignItems="center">
+        <ascii-font text="kanrisha" font="block" color={[colors.accent, "#a371f7"]} />
+      </box>
+      <text> </text>
+      <text fg={colors.dim}>k9s-style control for Coolify</text>
+      <text> </text>
+      <text fg={error ? colors.stopped : colors.accent}>{`${spinner}  ${status}`}</text>
+      <text fg={colors.dim}>press any key to skip</text>
+    </box>
+  );
+}
