@@ -8,6 +8,7 @@ import { testRender } from "@opentui/react/test-utils";
 import { App } from "../src/app.tsx";
 import { LogsPane } from "../src/components/logs-pane.tsx";
 import { Onboarding } from "../src/components/onboarding.tsx";
+import { Splash } from "../src/components/splash.tsx";
 import { mockResources } from "../src/coolify/mock.ts";
 
 if (process.env.KANRISHA_MOCK !== "1") {
@@ -108,6 +109,14 @@ assert(!cfgFrame.includes("s3cr3t"), "masked values stay hidden");
 ci.mockInput.pressKey("v");
 await ci.waitForFrame((f) => f.includes("s3cr3t"), { maxPasses: 300 });
 assert(ci.captureCharFrame().includes("s3cr3t"), "v reveals env values");
+
+// Splash screen - rendered standalone (in-app it auto-dismisses once data loads).
+const sp = await testRender(<Splash contextName="shini" error={null} spinner="⠋" />, { width: 90, height: 48 });
+await sp.waitForFrame((f) => f.includes("connecting to shini"), { maxPasses: 200 });
+const splashFrame = sp.captureCharFrame();
+assert(splashFrame.includes("@@@"), "splash ascii art renders");
+assert(splashFrame.includes("k9s-style control for Coolify"), "splash tagline renders");
+assert(splashFrame.includes("press any key to skip"), "splash skip hint renders");
 
 // Onboarding empty state - rendered standalone (only paints at 0 contexts).
 const o = await testRender(<Onboarding />, { width: 100, height: 16 });
