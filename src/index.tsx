@@ -44,6 +44,23 @@ switch (arg) {
       }
     }
     const renderer = await createCliRenderer();
+    // OpenTUI's own uncaught handler only console.errors — it never tears the
+    // renderer down, and process.exit() skips its beforeExit cleanup. Without
+    // this, an uncaught render error or stray rejection prints a stack into the
+    // alt-screen and leaves the terminal in alt-screen + mouse-tracking + hidden
+    // cursor. Restore the terminal first, then report on the normal screen and
+    // exit non-zero.
+    const die = (err: unknown) => {
+      try {
+        renderer.destroy();
+      } catch {
+        // already torn down — fall through to reporting
+      }
+      console.error(err);
+      process.exit(1);
+    };
+    process.on("uncaughtException", die);
+    process.on("unhandledRejection", die);
     createRoot(renderer).render(<App />);
   }
 }

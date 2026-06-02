@@ -65,6 +65,9 @@ export async function runUpdate(): Promise<void> {
   }
 
   const target = process.execPath;
+  // Set once we've moved the running Windows binary aside, so a failed write can
+  // be rolled back instead of leaving nothing at `target`.
+  let windowsBackup: string | null = null;
   try {
     if (process.platform === "win32") {
       // Windows locks a running .exe: it can't be overwritten or deleted, but it
@@ -73,6 +76,7 @@ export async function runUpdate(): Promise<void> {
       const old = `${target}.old`;
       rmSync(old, { force: true });
       renameSync(target, old);
+      windowsBackup = old;
       writeFileSync(target, new Uint8Array(bytes));
     } else {
       // Atomic replace: write alongside, then rename over. The running process
@@ -85,6 +89,15 @@ export async function runUpdate(): Promise<void> {
       renameSync(tmp, target);
     }
   } catch (err) {
+    // If we moved the running Windows binary aside but the write failed, restore
+    // it so a failed update is a no-op rather than leaving the user with no binary.
+    if (windowsBackup) {
+      try {
+        renameSync(windowsBackup, target);
+      } catch {
+        // restore failed too — the reinstall hint below is the recovery path.
+      }
+    }
     console.error(`Could not replace ${target}: ${(err as Error).message}`);
     console.error("If rumi is installed in a system dir, reinstall instead.");
     return;
