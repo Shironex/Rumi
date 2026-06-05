@@ -5,6 +5,7 @@ import { ConfigPane } from "./components/config-pane.tsx";
 import { ConfirmModal } from "./components/confirm-modal.tsx";
 import { ContextModal } from "./components/context-modal.tsx";
 import { DeployLogsPane } from "./components/deploy-logs-pane.tsx";
+import { EnvEditModal } from "./components/env-edit-modal.tsx";
 import { DetailPane } from "./components/detail-pane.tsx";
 import { FooterBar } from "./components/footer-bar.tsx";
 import { HeaderBar } from "./components/header-bar.tsx";
@@ -17,18 +18,25 @@ import { Splash } from "./components/splash.tsx";
 import { Toast } from "./components/toast.tsx";
 import { copyText } from "./clipboard.ts";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
-import { type CoolifyResource, envFileBlock, isTerminalStatus } from "./coolify/types.ts";
+import {
+  type CoolifyResource,
+  type EnvVar,
+  envFileBlock,
+  isTerminalStatus,
+  parseEnvAssignment,
+} from "./coolify/types.ts";
 import { USE_MOCK } from "./env.ts";
 import { useActions } from "./hooks/use-actions.ts";
 import { useConfig } from "./hooks/use-config.ts";
 import { useContexts } from "./hooks/use-contexts.ts";
 import { useDeployLogs } from "./hooks/use-deploy-logs.ts";
+import { useEnvActions } from "./hooks/use-env-actions.ts";
 import { useLogs } from "./hooks/use-logs.ts";
 import { useResourceList } from "./hooks/use-resource-list.ts";
 import { useServers } from "./hooks/use-servers.ts";
 import { useSpinner } from "./hooks/use-spinner.ts";
 import { useToast } from "./hooks/use-toast.ts";
-import { clamp } from "./util.ts";
+import { clamp, isPrintable } from "./util.ts";
 
 type View = "resources" | "servers";
 type Overlay =
@@ -63,6 +71,9 @@ export function App() {
     overlay?.kind === "config",
   );
   const [revealEnv, setRevealEnv] = useState(false);
+  const [envCursor, setEnvCursor] = useState(0);
+  const [envEdit, setEnvEdit] = useState<{ mode: "edit" | "add"; key: string; draft: string } | null>(null);
+  const [pendingEnvDelete, setPendingEnvDelete] = useState<EnvVar | null>(null);
   const toast = useToast();
   const actions = useActions(contexts.active, (resource, id, deploymentUuid) => {
     list.refresh();
@@ -72,6 +83,14 @@ export function App() {
       setOverlay({ kind: "deploy", resource, trackUuid: deploymentUuid });
     }
   });
+  const envActions = useEnvActions(
+    contexts.active,
+    overlay?.kind === "config" ? overlay.resource : undefined,
+    (summary) => {
+      config.reload();
+      toast.show(`${summary} · redeploy (d) to apply`);
+    },
+  );
   const [contextOpen, setContextOpen] = useState(false);
   const [contextCursor, setContextCursor] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -105,6 +124,62 @@ export function App() {
     const n = block.split("\n").length;
     if (copyText(block)) toast.show(`Copied ${n} env var${n === 1 ? "" : "s"}`);
     else toast.show("No terminal clipboard available", "warn");
+  };
+
+  // Env cursor, clamped to the current list so a delete/reload can't strand it.
+  const envCount = config.envs.length;
+  const envSel = envCount === 0 ? -1 : clamp(envCursor, 0, envCount - 1);
+  // Move via a functional updater (reads React's latest cursor, so key-repeat
+  // doesn't drop moves) and read the count from a live ref refreshed each render,
+  // never from the captured closure.
+  const envCountRef = useRef(0);
+  envCountRef.current = envCount;
+  const moveEnvCursor = (delta: number) =>
+    setEnvCursor((c) => clamp(c + delta, 0, Math.max(0, envCountRef.current - 1)));
+  const selectedEnv = envSel >= 0 ? config.envs[envSel] : undefined;
+
+  const openEnvEdit = (mode: "edit" | "add") => {
+    envActions.clearError();
+    if (mode === "add") {
+      setEnvEdit({ mode: "add", key: "", draft: "" });
+    } else if (selectedEnv) {
+      setEnvEdit({ mode: "edit", key: selectedEnv.key, draft: selectedEnv.value ?? "" });
+    }
+  };
+
+  const submitEnvEdit = () => {
+    if (!envEdit || envActions.busy) return;
+    if (envEdit.mode === "add") {
+      const parsed = parseEnvAssignment(envEdit.draft);
+      if (!parsed) {
+        toast.show("Use KEY=value with a valid key name", "warn");
+        return;
+      }
+      void envActions.create(parsed.key, parsed.value).then((ok) => ok && setEnvEdit(null));
+      return;
+    }
+    const env = config.envs.find((e) => e.key === envEdit.key);
+    if (!env) {
+      setEnvEdit(null);
+      return;
+    }
+    // Guard the secret-wipe: a hidden/shown-once value seeds an empty draft, so an
+    // empty submit would overwrite the live secret with "". Require a real value.
+    if (env.value === undefined && envEdit.draft === "") {
+      toast.show("Type a value — the current one is hidden", "warn");
+      return;
+    }
+    void envActions.update(env, envEdit.draft).then((ok) => ok && setEnvEdit(null));
+  };
+
+  const doEnvDelete = () => {
+    if (!pendingEnvDelete || envActions.busy) return;
+    void envActions.remove(pendingEnvDelete).then((ok) => {
+      if (ok) {
+        setPendingEnvDelete(null);
+        setEnvCursor((c) => clamp(c, 0, Math.max(0, envCount - 2)));
+      }
+    });
   };
 
   const noContexts = contexts.contexts.length === 0;
@@ -166,16 +241,49 @@ export function App() {
       if (e.name === "escape" || e.name === "?" || e.sequence === "?") setHelpOpen(false);
       return;
     }
-    // 5) logs / deploy-logs overlay: esc/key closes; arrows scroll history (sticky auto-tails)
+    // 5) logs / deploy-logs / config overlay
     if (overlay) {
+      // 5a) env edit/add input sub-mode swallows EVERYTHING (incl. q) — it's a
+      // text field; must precede the quit check so typing "q" lands in the draft.
+      if (overlay.kind === "config" && envEdit) {
+        if (e.name === "escape") {
+          setEnvEdit(null);
+          envActions.clearError();
+        } else if (e.name === "return" || e.name === "enter") submitEnvEdit();
+        else if (e.name === "backspace") setEnvEdit((s) => (s ? { ...s, draft: s.draft.slice(0, -1) } : s));
+        else if (isPrintable(e.sequence, e.ctrl, e.meta))
+          setEnvEdit((s) => (s ? { ...s, draft: s.draft + e.sequence } : s));
+        return;
+      }
+      // 5b) env delete confirm: y deletes, esc/n cancels (Enter never, too reflexive)
+      if (overlay.kind === "config" && pendingEnvDelete) {
+        if (quit) exitApp();
+        if (envActions.busy) return;
+        if (e.name === "y") doEnvDelete();
+        else if (e.name === "escape" || e.name === "n") {
+          setPendingEnvDelete(null);
+          envActions.clearError();
+        }
+        return;
+      }
       if (quit) exitApp();
       if (e.name === "escape") setOverlay(null);
       else if (overlay.kind === "runtime" && e.name === "l") setOverlay(null);
       else if (overlay.kind === "deploy" && wantsDeployLog) setOverlay(null);
-      else if (overlay.kind === "config" && e.name === "e") setOverlay(null);
-      else if (overlay.kind === "config" && e.name === "v") setRevealEnv((r) => !r);
-      else if (overlay.kind === "config" && e.name === "y") copyEnv();
-      else if (e.name === "up" || e.name === "k") logScrollRef.current?.scrollBy(-1);
+      else if (overlay.kind === "config") {
+        if (e.name === "e") setOverlay(null);
+        else if (e.name === "v") setRevealEnv((r) => !r);
+        else if (e.name === "y") copyEnv();
+        else if (e.name === "return" || e.name === "enter") openEnvEdit("edit");
+        else if (e.name === "a") openEnvEdit("add");
+        else if (e.name === "x") {
+          if (selectedEnv) {
+            envActions.clearError();
+            setPendingEnvDelete(selectedEnv);
+          }
+        } else if (e.name === "up" || e.name === "k") moveEnvCursor(-1);
+        else if (e.name === "down" || e.name === "j") moveEnvCursor(1);
+      } else if (e.name === "up" || e.name === "k") logScrollRef.current?.scrollBy(-1);
       else if (e.name === "down" || e.name === "j") logScrollRef.current?.scrollBy(1);
       else if (e.name === "pageup") logScrollRef.current?.scrollBy(-1, "viewport");
       else if (e.name === "pagedown") logScrollRef.current?.scrollBy(1, "viewport");
@@ -226,6 +334,9 @@ export function App() {
       if (e.name === "e") {
         if (list.selectedRow) {
           setRevealEnv(false);
+          setEnvCursor(0);
+          setEnvEdit(null);
+          setPendingEnvDelete(null);
           setOverlay({ kind: "config", resource: list.selectedRow });
         }
         return;
@@ -342,7 +453,7 @@ export function App() {
           height={CONFIG_HEIGHT}
           maxWidth={width - 6}
           focused
-          scrollRef={logScrollRef}
+          selectedIndex={envSel}
         />
       ) : null}
 
@@ -354,6 +465,28 @@ export function App() {
           target={actions.pending.resource.name}
           busy={actions.busy}
           error={actions.error}
+        />
+      ) : null}
+
+      {overlay?.kind === "config" && envEdit ? (
+        <EnvEditModal
+          mode={envEdit.mode}
+          envKey={envEdit.key}
+          draft={envEdit.draft}
+          busy={envActions.busy}
+          error={envActions.error}
+          valueHidden={envEdit.mode === "edit" && config.envs.find((e) => e.key === envEdit.key)?.value === undefined}
+        />
+      ) : null}
+
+      {overlay?.kind === "config" && pendingEnvDelete ? (
+        <ConfirmModal
+          verb="Delete"
+          subject="this env var"
+          busyText="deleting…"
+          target={pendingEnvDelete.key}
+          busy={envActions.busy}
+          error={envActions.error}
         />
       ) : null}
 

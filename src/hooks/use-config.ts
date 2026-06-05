@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CoolifyContext } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockConfig, mockEnvVars } from "../coolify/mock.ts";
@@ -35,8 +35,11 @@ export function useConfig(
   ctx: CoolifyContext | undefined,
   resource: CoolifyResource | undefined,
   active: boolean,
-): ConfigState {
+): ConfigState & { reload: () => void } {
   const [state, setState] = useState<ConfigState>(IDLE);
+  // Bumped after a write to re-run the load effect and pull fresh env/config.
+  const [nonce, setNonce] = useState(0);
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!active || !ctx || !resource) {
@@ -92,7 +95,7 @@ export function useConfig(
     })();
 
     return () => controller.abort();
-  }, [active, ctx, resource]);
+  }, [active, ctx, resource, nonce]);
 
-  return state;
+  return { ...state, reload };
 }

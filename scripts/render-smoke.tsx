@@ -241,6 +241,41 @@ assert(ci.captureCharFrame().includes("s3cr3t"), "v reveals env values");
 ci.mockInput.pressKey("y");
 await ci.waitForFrame((f) => f.includes("config ·"), { maxPasses: 300 });
 assert(ci.captureCharFrame().includes("config ·"), "y (copy env) keeps the inspector rendered");
+
+// ↵ edits the selected var (DATABASE_URL, the first row). Submitting in mock skips
+// the network and fires the "updated" toast — exercises the update wiring end-to-end.
+ci.mockInput.pressEnter();
+await ci.waitForFrame((f) => f.includes("edit DATABASE_URL"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("edit DATABASE_URL"), "↵ opens the env value editor");
+ci.mockInput.pressEnter();
+await ci.waitForFrame((f) => f.includes("DATABASE_URL updated"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("DATABASE_URL updated"), "submitting an edit reports the update");
+
+// a adds a var via a typed KEY=value line; create wiring fires the "added" toast.
+ci.mockInput.pressKey("a");
+await ci.waitForFrame((f) => f.includes("add env var"), { maxPasses: 300 });
+ci.mockInput.typeText("FOO=bar");
+await ci.waitForFrame((f) => f.includes("FOO=bar"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("FOO=bar"), "typed input lands in the add editor");
+ci.mockInput.pressEnter();
+await ci.waitForFrame((f) => f.includes("FOO added"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("FOO added"), "submitting an add reports the new var");
+
+// x asks to confirm, then y deletes (mock) and reports it.
+ci.mockInput.pressKey("x");
+await ci.waitForFrame((f) => f.includes("Delete this env var"), { maxPasses: 300 });
+const del = ci.captureCharFrame();
+assert(del.includes("Delete this env var"), "x opens the env delete confirm");
+assert(del.includes("DATABASE_URL"), "delete confirm names the target var");
+ci.mockInput.pressKey("y");
+await ci.waitForFrame((f) => f.includes("DATABASE_URL deleted"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("DATABASE_URL deleted"), "y confirms the env delete");
+
+// ↓ moves the env cursor off row 0 (single press — the renderer races back-to-back
+// keypresses, but the cursor up/down logic is covered by the move helper either way).
+ci.mockInput.pressKey("j");
+await ci.waitForFrame((f) => f.includes("▸ NODE_ENV"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("▸ NODE_ENV"), "↓ moves the env cursor");
 ci.renderer.destroy();
 
 // Splash screen - rendered standalone (in-app it auto-dismisses once data loads).
