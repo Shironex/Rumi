@@ -62,7 +62,13 @@ Prebuilt binaries are published for **macOS** (arm64) and **Linux** (x64, arm64)
 
 ### Windows
 
-Windows support is new and still being polished, but the dashboard renders and runs. Download `rumi-windows-x64.exe` from the [releases page](https://github.com/Shironex/Rumi/releases), put it somewhere on your `PATH`, and run `rumi`. `rumi update` works on Windows too. It reads contexts from `%APPDATA%\coolify\config.json`, the same file the Coolify CLI uses.
+Windows support is new and still being polished, but the dashboard renders and runs. Install with PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/Shironex/Rumi/main/install.ps1 | iex
+```
+
+This drops `rumi.exe` into `%LOCALAPPDATA%\Programs\rumi` (override with `$env:RUMI_INSTALL_DIR`) and adds it to your user `PATH`; open a new terminal and run `rumi`. Or grab `rumi-windows-x64.exe` from the [releases page](https://github.com/Shironex/Rumi/releases) manually. `rumi update` works on Windows too. Contexts are read from `%APPDATA%\coolify\config.json`, the same file the Coolify CLI uses.
 
 ## Configuration
 
@@ -103,6 +109,7 @@ rumi --help     # show help
 | `L` | deploy / build logs |
 | `e` | config + env inspector |
 | `v` | reveal env values (in the inspector) |
+| `y` | copy env vars as a `.env` block (in the inspector) |
 | `?` | help |
 | `q` / `^C` | quit |
 

@@ -10,6 +10,11 @@ Dates are intentionally absent; things ship when they are ready.
   error; a misconfigured URL that returns non-JSON is named as such; a token
   without `read:sensitive` is flagged in the config inspector; and apps with no
   log output or no deployments get explicit empty states instead of a blank pane.
+- **Copy env vars (`y`).** From the config inspector, copy a resource's env vars
+  as a ready-to-paste `.env` block. Uses OSC 52 so it works over SSH; needs a
+  `read:sensitive` token (otherwise there are only masked keys to copy).
+- **Windows installer.** `install.ps1` (PowerShell one-liner) downloads the
+  binary, drops it in `%LOCALAPPDATA%\Programs\rumi`, and adds it to the user PATH.
 
 ## Shipped (v0.1.0)
 
@@ -33,8 +38,8 @@ Dates are intentionally absent; things ship when they are ready.
 
 - **x64 (Intel) macOS build.** v0.1.0 ships arm64 macOS only; the Intel smoke is
   flaky on the CI runner. Stabilize it and publish the x64 binary.
-- **Windows polish.** A proper `install.ps1` with PATH handling, plus a pass on
-  the self-update rename dance and terminal restore on quit.
+- **Windows polish.** `install.ps1` and the self-update rename dance now ship;
+  next is a Scoop manifest and a wider soak of the dashboard on Windows Terminal.
 - **Release hardening.** Confirm the multi-arch release pipeline end to end and
   smooth out anything the first real release surfaces.
 - **More log coverage.** Service and database logs where the Coolify API exposes
