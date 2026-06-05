@@ -1,13 +1,11 @@
 import { memo } from "react";
+import { footerHints, type OverlayKind, type View } from "../keymap.ts";
 import { colors } from "../theme.ts";
-
-type View = "resources" | "servers";
-type OverlayKind = "runtime" | "deploy" | "config" | null;
 
 interface Props {
   filterMode: boolean;
   filter: string;
-  overlayKind: OverlayKind;
+  overlayKind: OverlayKind | null;
   view: View;
 }
 
@@ -21,17 +19,5 @@ export const FooterBar = memo(function FooterBar({ filterMode, filter, overlayKi
       </box>
     );
   }
-
-  let hints: string;
-  if (overlayKind === "config") {
-    hints = "↑↓ move   ↵ edit   a add   x del   v values   y copy   e/esc close   q quit";
-  } else if (overlayKind) {
-    hints = "tailing   ↑↓ PgUp/PgDn scroll   esc close   q quit";
-  } else if (view === "servers") {
-    hints = "↑↓/jk move   R refresh   c context   tab resources   ? help   q quit";
-  } else {
-    hints =
-      "↑↓/jk move   / filter   l logs   L deploy   e config   s/r/d act   R refresh   c context   tab servers   ? help   q quit";
-  }
-  return <text fg={colors.dim}>{hints}</text>;
+  return <text fg={colors.dim}>{footerHints(overlayKind, view)}</text>;
 });

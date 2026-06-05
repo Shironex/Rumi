@@ -1,47 +1,6 @@
 import { TextAttributes } from "@opentui/core";
+import { HELP_SECTIONS } from "../keymap.ts";
 import { colors } from "../theme.ts";
-
-const SECTIONS: ReadonlyArray<{ title: string; keys: ReadonlyArray<readonly [string, string]> }> = [
-  {
-    title: "navigate",
-    keys: [
-      ["↑ ↓ / j k", "move selection"],
-      ["tab", "resources / servers"],
-      ["/", "filter resources"],
-      ["c", "switch context"],
-    ],
-  },
-  {
-    title: "act on selected",
-    keys: [
-      ["s", "start / stop"],
-      ["r", "restart"],
-      ["d", "deploy (apps, services)"],
-      ["R", "refresh now"],
-    ],
-  },
-  {
-    title: "logs & inspect",
-    keys: [
-      ["l", "runtime logs"],
-      ["L", "deploy / build logs"],
-      ["e", "config + env vars"],
-      ["v", "reveal env values"],
-      ["y", "copy env to clipboard"],
-      ["↵", "edit selected env"],
-      ["a", "add env (KEY=value)"],
-      ["x", "delete selected env"],
-      ["esc", "close overlay"],
-    ],
-  },
-  {
-    title: "general",
-    keys: [
-      ["?", "this help"],
-      ["q / ^C", "quit"],
-    ],
-  },
-];
 
 export function HelpOverlay() {
   return (
@@ -71,7 +30,7 @@ export function HelpOverlay() {
           rumi · keys
         </text>
         <text> </text>
-        {SECTIONS.map((section) => (
+        {HELP_SECTIONS.map((section) => (
           <box key={section.title} flexDirection="column">
             <text fg={colors.dim}>{section.title}</text>
             {section.keys.map(([key, desc]) => (

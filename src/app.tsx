@@ -17,14 +17,7 @@ import { ServersPane } from "./components/servers-pane.tsx";
 import { Splash } from "./components/splash.tsx";
 import { Toast } from "./components/toast.tsx";
 import { copyText } from "./clipboard.ts";
-import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
-import {
-  type CoolifyResource,
-  type EnvVar,
-  envFileBlock,
-  isTerminalStatus,
-  parseEnvAssignment,
-} from "./coolify/types.ts";
+import { type EnvVar, envFileBlock, isTerminalStatus, parseEnvAssignment } from "./coolify/types.ts";
 import { USE_MOCK } from "./env.ts";
 import { useActions } from "./hooks/use-actions.ts";
 import { useConfig } from "./hooks/use-config.ts";
@@ -36,13 +29,8 @@ import { useResourceList } from "./hooks/use-resource-list.ts";
 import { useServers } from "./hooks/use-servers.ts";
 import { useSpinner } from "./hooks/use-spinner.ts";
 import { useToast } from "./hooks/use-toast.ts";
-import { clamp, isPrintable } from "./util.ts";
-
-type View = "resources" | "servers";
-type Overlay =
-  | { kind: "runtime"; resource: CoolifyResource }
-  | { kind: "deploy"; resource: CoolifyResource; trackUuid?: string }
-  | { kind: "config"; resource: CoolifyResource };
+import { dispatchKey, type EnvEdit, type KeyContext, type Overlay, type View } from "./keymap.ts";
+import { clamp } from "./util.ts";
 
 const LOGS_HEIGHT = 14;
 const CONFIG_HEIGHT = 18;
@@ -72,7 +60,7 @@ export function App() {
   );
   const [revealEnv, setRevealEnv] = useState(false);
   const [envCursor, setEnvCursor] = useState(0);
-  const [envEdit, setEnvEdit] = useState<{ mode: "edit" | "add"; key: string; draft: string } | null>(null);
+  const [envEdit, setEnvEdit] = useState<EnvEdit | null>(null);
   const [pendingEnvDelete, setPendingEnvDelete] = useState<EnvVar | null>(null);
   const toast = useToast();
   const actions = useActions(contexts.active, (resource, id, deploymentUuid) => {
@@ -200,171 +188,44 @@ export function App() {
     overlay?.kind === "deploy" && deployLogs.deployment != null && !isTerminalStatus(deployLogs.deployment.status);
   const spinner = useSpinner(showSplash || list.filtered.some((r) => r.state === "transitioning") || deployRunning);
 
-  // useKeyboard wraps this in useEffectEvent, so it always sees current state - no refs needed.
-  useKeyboard((e) => {
-    const quit = e.name === "q" || (e.ctrl && e.name === "c");
-    const wantsDeployLog = e.sequence === "L" || (e.name === "l" && e.shift);
-
-    // 0) splash: any key skips it (quit still quits)
-    if (showSplash) {
-      if (quit) exitApp();
-      else setSplashSkipped(true);
-      return;
-    }
-    // 1) filter input mode swallows everything
-    if (list.filterMode) {
-      list.handleFilterKey(e);
-      return;
-    }
-    // 2) confirm modal: y confirms, esc / n cancels (never Enter, too reflexive)
-    if (actions.pending) {
-      if (quit) exitApp();
-      if (e.name === "y") actions.confirm();
-      else if (e.name === "escape" || e.name === "n") actions.cancel();
-      return;
-    }
-    // 3) context switcher modal
-    if (contextOpen) {
-      if (quit) exitApp();
-      if (e.name === "escape" || e.name === "c") setContextOpen(false);
-      else if (e.name === "up" || e.name === "k") setContextCursor((c) => clamp(c - 1, 0, lastContext));
-      else if (e.name === "down" || e.name === "j") setContextCursor((c) => clamp(c + 1, 0, lastContext));
-      else if (e.name === "return" || e.name === "enter") {
-        contexts.select(contextCursor);
-        setContextOpen(false);
-      }
-      return;
-    }
-    // 4) help overlay: esc / ? dismisses (quit stays live)
-    if (helpOpen) {
-      if (quit) exitApp();
-      if (e.name === "escape" || e.name === "?" || e.sequence === "?") setHelpOpen(false);
-      return;
-    }
-    // 5) logs / deploy-logs / config overlay
-    if (overlay) {
-      // 5a) env edit/add input sub-mode swallows EVERYTHING (incl. q) — it's a
-      // text field; must precede the quit check so typing "q" lands in the draft.
-      if (overlay.kind === "config" && envEdit) {
-        if (e.name === "escape") {
-          setEnvEdit(null);
-          envActions.clearError();
-        } else if (e.name === "return" || e.name === "enter") submitEnvEdit();
-        else if (e.name === "backspace") setEnvEdit((s) => (s ? { ...s, draft: s.draft.slice(0, -1) } : s));
-        else if (isPrintable(e.sequence, e.ctrl, e.meta))
-          setEnvEdit((s) => (s ? { ...s, draft: s.draft + e.sequence } : s));
-        return;
-      }
-      // 5b) env delete confirm: y deletes, esc/n cancels (Enter never, too reflexive)
-      if (overlay.kind === "config" && pendingEnvDelete) {
-        if (quit) exitApp();
-        if (envActions.busy) return;
-        if (e.name === "y") doEnvDelete();
-        else if (e.name === "escape" || e.name === "n") {
-          setPendingEnvDelete(null);
-          envActions.clearError();
-        }
-        return;
-      }
-      if (quit) exitApp();
-      if (e.name === "escape") setOverlay(null);
-      else if (overlay.kind === "runtime" && e.name === "l") setOverlay(null);
-      else if (overlay.kind === "deploy" && wantsDeployLog) setOverlay(null);
-      else if (overlay.kind === "config") {
-        if (e.name === "e") setOverlay(null);
-        else if (e.name === "v") setRevealEnv((r) => !r);
-        else if (e.name === "y") copyEnv();
-        else if (e.name === "return" || e.name === "enter") openEnvEdit("edit");
-        else if (e.name === "a") openEnvEdit("add");
-        else if (e.name === "x") {
-          if (selectedEnv) {
-            envActions.clearError();
-            setPendingEnvDelete(selectedEnv);
-          }
-        } else if (e.name === "up" || e.name === "k") moveEnvCursor(-1);
-        else if (e.name === "down" || e.name === "j") moveEnvCursor(1);
-      } else if (e.name === "up" || e.name === "k") logScrollRef.current?.scrollBy(-1);
-      else if (e.name === "down" || e.name === "j") logScrollRef.current?.scrollBy(1);
-      else if (e.name === "pageup") logScrollRef.current?.scrollBy(-1, "viewport");
-      else if (e.name === "pagedown") logScrollRef.current?.scrollBy(1, "viewport");
-      return;
-    }
-
-    // 6) global - keys live in every view
-    if (quit) exitApp();
-    if (e.name === "?" || e.sequence === "?") {
-      setHelpOpen(true);
-      return;
-    }
-    if (e.name === "tab") {
-      setView((v) => (v === "resources" ? "servers" : "resources"));
-      return;
-    }
-    if (e.name === "c" && !noContexts) {
-      setContextCursor(contexts.activeIndex);
-      setContextOpen(true);
-      return;
-    }
-    // refresh moved to R; r is restart in the resources view. Shift+r arrives as sequence "R".
-    if (e.sequence === "R") {
-      if (view === "servers") servers.refresh();
-      else list.refresh();
-      return;
-    }
-
-    // 7) resources-view-only keys
-    if (view === "resources") {
-      if (e.name === "/" || e.sequence === "/") {
-        list.startFilter();
-        return;
-      }
-      if (e.name === "escape" && list.filter) {
-        list.clearFilter();
-        return;
-      }
-      if (wantsDeployLog) {
-        const r = list.selectedRow;
-        if (r && r.kind === "application") setOverlay({ kind: "deploy", resource: r });
-        return;
-      }
-      if (e.name === "l") {
-        if (list.selectedRow) setOverlay({ kind: "runtime", resource: list.selectedRow });
-        return;
-      }
-      if (e.name === "e") {
-        if (list.selectedRow) {
-          setRevealEnv(false);
-          setEnvCursor(0);
-          setEnvEdit(null);
-          setPendingEnvDelete(null);
-          setOverlay({ kind: "config", resource: list.selectedRow });
-        }
-        return;
-      }
-      const row = list.selectedRow;
-      if (row && canAct(row)) {
-        if (e.name === "s") {
-          actions.request(row, toggleVerb(row.state));
-          return;
-        }
-        if (e.name === "r") {
-          actions.request(row, "restart");
-          return;
-        }
-        if (e.name === "d" && canDeploy(row)) {
-          actions.request(row, "deploy");
-          return;
-        }
-      }
-    }
-
-    // 8) navigation, scoped to the active view
-    const dir = e.name === "up" || e.name === "k" ? -1 : e.name === "down" || e.name === "j" ? 1 : 0;
-    if (dir !== 0) {
-      if (view === "servers") servers.move(dir);
-      else list.move(dir);
-    }
-  });
+  // Build the key context fresh each render and run it down the precedence chain
+  // in keymap.ts (see KeyContext for why it must not be captured or memoized).
+  const keyCtx: KeyContext = {
+    showSplash,
+    setSplashSkipped,
+    exitApp,
+    list,
+    actions,
+    servers,
+    contexts,
+    envActions,
+    view,
+    setView,
+    noContexts,
+    contextOpen,
+    setContextOpen,
+    contextCursor,
+    setContextCursor,
+    lastContext,
+    helpOpen,
+    setHelpOpen,
+    overlay,
+    setOverlay,
+    envEdit,
+    setEnvEdit,
+    pendingEnvDelete,
+    setPendingEnvDelete,
+    setRevealEnv,
+    setEnvCursor,
+    selectedEnv,
+    moveEnvCursor,
+    openEnvEdit,
+    submitEnvEdit,
+    doEnvDelete,
+    copyEnv,
+    logScrollRef,
+  };
+  useKeyboard((e) => dispatchKey(e, keyCtx));
 
   const overlayHeight = overlay?.kind === "config" ? CONFIG_HEIGHT : LOGS_HEIGHT;
   const viewportHeight = Math.max(3, height - 7 - (overlayOpen ? overlayHeight : 0));
