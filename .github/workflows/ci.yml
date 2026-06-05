@@ -25,6 +25,7 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
+      - run: bun test
       # On Windows this also proves the OpenTUI win32 native module loads and the
       # React tree mounts (testRender uses the real renderer in-memory). The
       # step timeout is a backstop in case the in-script watchdog ever misses.

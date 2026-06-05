@@ -15,8 +15,9 @@ import { ResourcesTable } from "./components/resources-table.tsx";
 import { ServersPane } from "./components/servers-pane.tsx";
 import { Splash } from "./components/splash.tsx";
 import { Toast } from "./components/toast.tsx";
+import { copyText } from "./clipboard.ts";
 import { canAct, canDeploy, toggleVerb } from "./coolify/actions.ts";
-import { type CoolifyResource, isTerminalStatus } from "./coolify/types.ts";
+import { type CoolifyResource, envFileBlock, isTerminalStatus } from "./coolify/types.ts";
 import { USE_MOCK } from "./env.ts";
 import { useActions } from "./hooks/use-actions.ts";
 import { useConfig } from "./hooks/use-config.ts";
@@ -88,6 +89,24 @@ export function App() {
     process.exit(0);
   };
 
+  // Copy the open resource's env vars to the clipboard as a .env block (OSC 52,
+  // so it works over SSH). Gated on the token actually carrying values — without
+  // read:sensitive there's nothing but masked keys to copy.
+  const copyEnv = () => {
+    if (!config.valuesAvailable) {
+      toast.show("Env values hidden (token lacks read:sensitive)", "warn");
+      return;
+    }
+    const block = envFileBlock(config.envs);
+    if (!block) {
+      toast.show("No env vars to copy", "warn");
+      return;
+    }
+    const n = block.split("\n").length;
+    if (copyText(block)) toast.show(`Copied ${n} env var${n === 1 ? "" : "s"}`);
+    else toast.show("No terminal clipboard available", "warn");
+  };
+
   const noContexts = contexts.contexts.length === 0;
   const lastContext = Math.max(0, contexts.contexts.length - 1);
 
@@ -155,6 +174,7 @@ export function App() {
       else if (overlay.kind === "deploy" && wantsDeployLog) setOverlay(null);
       else if (overlay.kind === "config" && e.name === "e") setOverlay(null);
       else if (overlay.kind === "config" && e.name === "v") setRevealEnv((r) => !r);
+      else if (overlay.kind === "config" && e.name === "y") copyEnv();
       else if (e.name === "up" || e.name === "k") logScrollRef.current?.scrollBy(-1);
       else if (e.name === "down" || e.name === "j") logScrollRef.current?.scrollBy(1);
       else if (e.name === "pageup") logScrollRef.current?.scrollBy(-1, "viewport");

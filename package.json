@@ -8,6 +8,7 @@
     "dev": "bun run --watch src/index.tsx",
     "start": "bun run src/index.tsx",
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",

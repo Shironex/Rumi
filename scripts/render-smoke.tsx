@@ -214,6 +214,7 @@ await hp.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
 hp.mockInput.pressKey("?");
 await hp.waitForFrame((f) => f.includes("rumi · keys"), { maxPasses: 300 });
 assert(hp.captureCharFrame().includes("rumi · keys"), "? opens the help overlay");
+assert(hp.captureCharFrame().includes("copy env to clipboard"), "help lists the copy-env key");
 hp.renderer.destroy();
 
 // Config + env inspector opens on e (selection starts on lunofi-api, an app).
@@ -223,6 +224,7 @@ ci.mockInput.pressKey("e");
 await ci.waitForFrame((f) => f.includes("DATABASE_URL"), { maxPasses: 300 });
 const cfgFrame = ci.captureCharFrame();
 assert(cfgFrame.includes("config ·"), "e opens the config + env inspector");
+assert(cfgFrame.includes("y copy"), "config footer advertises the copy-env key");
 assert(cfgFrame.includes("DATABASE_URL"), "env keys render in the inspector");
 assert(cfgFrame.includes("nixpacks"), "curated config fields render");
 assert(cfgFrame.includes("••"), "env values are masked by default");
@@ -232,6 +234,13 @@ assert(!cfgFrame.includes("s3cr3t"), "masked values stay hidden");
 ci.mockInput.pressKey("v");
 await ci.waitForFrame((f) => f.includes("s3cr3t"), { maxPasses: 300 });
 assert(ci.captureCharFrame().includes("s3cr3t"), "v reveals env values");
+
+// y copies the env block. The OSC 52 write is gated on a TTY, so under the piped
+// smoke it no-ops — this only proves the keypress->copyEnv path doesn't throw and
+// the inspector stays up. The actual clipboard write is a manual check in a real term.
+ci.mockInput.pressKey("y");
+await ci.waitForFrame((f) => f.includes("config ·"), { maxPasses: 300 });
+assert(ci.captureCharFrame().includes("config ·"), "y (copy env) keeps the inspector rendered");
 ci.renderer.destroy();
 
 // Splash screen - rendered standalone (in-app it auto-dismisses once data loads).

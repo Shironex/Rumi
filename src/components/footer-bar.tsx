@@ -24,7 +24,7 @@ export const FooterBar = memo(function FooterBar({ filterMode, filter, overlayKi
 
   let hints: string;
   if (overlayKind === "config") {
-    hints = "↑↓ PgUp/PgDn scroll   v values   e/esc close   q quit";
+    hints = "↑↓ PgUp/PgDn scroll   v values   y copy   e/esc close   q quit";
   } else if (overlayKind) {
     hints = "tailing   ↑↓ PgUp/PgDn scroll   esc close   q quit";
   } else if (view === "servers") {

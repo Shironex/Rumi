@@ -53,6 +53,36 @@ export interface ConfigField {
   value: string;
 }
 
+// A value needs dotenv quoting if it carries whitespace or shell-significant
+// characters; bare alphanumeric/url-ish values stay unquoted for a clean paste.
+const ENV_NEEDS_QUOTE = /[\s"'#$`\\]/;
+
+/** Serialize a single value for a `.env` line, double-quoting + escaping when needed. */
+function dotenvValue(v: string): string {
+  if (v === "" || !ENV_NEEDS_QUOTE.test(v)) return v;
+  // Escape the backslash FIRST — otherwise the backslash introduced by the
+  // newline/quote escapes below would itself get doubled and corrupt the value.
+  const escaped = v
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\t/g, "\\t");
+  return `"${escaped}"`;
+}
+
+/**
+ * Render readable env vars as a `.env` block (KEY=value lines), ready to paste.
+ * Vars whose value is hidden (no sensitive-read scope) are skipped — there's
+ * nothing to copy for them. Order is preserved as the API returned it.
+ */
+export function envFileBlock(envs: EnvVar[]): string {
+  return envs
+    .filter((e) => e.value !== undefined)
+    .map((e) => `${e.key}=${dotenvValue(e.value as string)}`)
+    .join("\n");
+}
+
 /** Compact scope tags for an env var, e.g. ["build", "runtime", "required"]. */
 export function envScopeTags(env: EnvVar): string[] {
   const tags: string[] = [];

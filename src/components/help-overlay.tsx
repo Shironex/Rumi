@@ -27,6 +27,7 @@ const SECTIONS: ReadonlyArray<{ title: string; keys: ReadonlyArray<readonly [str
       ["L", "deploy / build logs"],
       ["e", "config + env vars"],
       ["v", "reveal env values"],
+      ["y", "copy env to clipboard"],
       ["↑ ↓", "scroll while open"],
       ["PgUp PgDn", "scroll a page"],
       ["esc", "close overlay"],
