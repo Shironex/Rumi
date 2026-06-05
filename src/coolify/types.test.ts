@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
-import { type EnvVar, envFileBlock } from "./types.ts";
+import { type EnvVar, envCreatePayload, envFileBlock, envUpdatePayload, parseEnvAssignment } from "./types.ts";
 
-function env(key: string, value?: string): EnvVar {
+function env(key: string, value?: string, overrides: Partial<EnvVar> = {}): EnvVar {
   return {
+    uuid: "",
     key,
     value,
     buildtime: false,
@@ -11,7 +12,10 @@ function env(key: string, value?: string): EnvVar {
     shared: false,
     preview: false,
     multiline: false,
+    literal: false,
+    shownOnce: false,
     managed: false,
+    ...overrides,
   };
 }
 
@@ -72,4 +76,48 @@ test("envFileBlock leaves bare values unquoted", () => {
 test("envFileBlock returns empty string for no readable vars", () => {
   expect(envFileBlock([env("A", undefined)])).toBe("");
   expect(envFileBlock([])).toBe("");
+});
+
+test("parseEnvAssignment splits on the first = and validates the key", () => {
+  expect(parseEnvAssignment("FOO=bar")).toEqual({ key: "FOO", value: "bar" });
+  expect(parseEnvAssignment("URL=https://x/y?a=1&b=2")).toEqual({ key: "URL", value: "https://x/y?a=1&b=2" });
+  expect(parseEnvAssignment("  SPACED  = trimmed key, kept value ")).toEqual({
+    key: "SPACED",
+    value: " trimmed key, kept value ",
+  });
+  expect(parseEnvAssignment("EMPTY=")).toEqual({ key: "EMPTY", value: "" });
+});
+
+test("parseEnvAssignment rejects missing or invalid keys", () => {
+  expect(parseEnvAssignment("noequals")).toBeNull();
+  expect(parseEnvAssignment("=novalue")).toBeNull();
+  expect(parseEnvAssignment("9LEADINGDIGIT=x")).toBeNull();
+  expect(parseEnvAssignment("has space=x")).toBeNull();
+  expect(parseEnvAssignment("dash-key=x")).toBeNull();
+});
+
+test("envUpdatePayload carries every flag over so PATCH can't reset them", () => {
+  const e = env("SECRET", "old", { buildtime: true, preview: true, literal: true, multiline: true, shownOnce: true });
+  expect(envUpdatePayload(e, "new")).toEqual({
+    key: "SECRET",
+    value: "new",
+    is_preview: true,
+    is_build_time: true,
+    is_literal: true,
+    is_multiline: true,
+    is_shown_once: true,
+  });
+});
+
+test("envCreatePayload defaults flags false and infers multiline", () => {
+  expect(envCreatePayload("K", "v")).toEqual({
+    key: "K",
+    value: "v",
+    is_preview: false,
+    is_build_time: false,
+    is_literal: false,
+    is_multiline: false,
+    is_shown_once: false,
+  });
+  expect(envCreatePayload("K", "a\nb").is_multiline).toBe(true);
 });

@@ -7,6 +7,7 @@ import {
   type CoolifyServer,
   type Deployment,
   type EnvVar,
+  type EnvWrite,
   normalizeKind,
   parseDeployLogs,
   parseState,
@@ -21,6 +22,7 @@ interface RawDeployment {
 }
 
 interface RawEnv {
+  uuid?: string;
   key?: string;
   value?: string;
   real_value?: string;
@@ -31,6 +33,8 @@ interface RawEnv {
   is_shared?: boolean;
   is_preview?: boolean;
   is_multiline?: boolean;
+  is_literal?: boolean;
+  is_shown_once?: boolean;
   is_coolify?: boolean;
 }
 
@@ -136,7 +140,8 @@ export class CoolifyClient {
   ): Promise<Response> {
     let res: Response;
     try {
-      res = await fetch(`${this.ctx.fqdn}${path}`, { ...init, headers: this.headers(), signal });
+      const headers = { ...this.headers(), ...((init?.headers as Record<string, string> | undefined) ?? {}) };
+      res = await fetch(`${this.ctx.fqdn}${path}`, { ...init, headers, signal });
     } catch (err) {
       if (isAbortError(err, signal)) throw err;
       throw new CoolifyConnectionError(this.ctx.name, this.ctx.fqdn, err as Error);
@@ -222,6 +227,46 @@ export class CoolifyClient {
     return curateConfig(raw);
   }
 
+  /** Update an existing env var (matched by key) for an app/service. */
+  async updateEnvVar(resource: CoolifyResource, payload: EnvWrite, signal?: AbortSignal): Promise<void> {
+    await this.writeEnv(resource, "PATCH", "", payload, signal);
+  }
+
+  /** Create a new env var on an app/service. */
+  async createEnvVar(resource: CoolifyResource, payload: EnvWrite, signal?: AbortSignal): Promise<void> {
+    await this.writeEnv(resource, "POST", "", payload, signal);
+  }
+
+  /** Delete an env var by its uuid (the one field update/create don't need). */
+  async deleteEnvVar(resource: CoolifyResource, envUuid: string, signal?: AbortSignal): Promise<void> {
+    if (!envUuid) throw new Error("Can't delete this env var: its uuid is missing from the API response.");
+    await this.writeEnv(resource, "DELETE", `/${encodeURIComponent(envUuid)}`, undefined, signal);
+  }
+
+  /**
+   * Shared write path for env mutations. Sends JSON only when there's a body
+   * (DELETE has none and often answers 204/empty, so the response is discarded).
+   */
+  private async writeEnv(
+    resource: CoolifyResource,
+    method: "PATCH" | "POST" | "DELETE",
+    suffix: string,
+    body: EnvWrite | undefined,
+    signal: AbortSignal | undefined,
+  ): Promise<void> {
+    const segment = envConfigSegment(resource);
+    if (!segment) throw new Error(`A ${resource.kind} resource has no env endpoint to write to.`);
+    await this.request(
+      `/api/v1/${segment}/${resource.uuid}/envs${suffix}`,
+      {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      },
+      signal,
+    );
+  }
+
   private async post(path: string, signal?: AbortSignal): Promise<unknown> {
     const res = await this.request(path, { method: "POST" }, signal);
     const text = await res.text();
@@ -267,6 +312,7 @@ function toEnvVar(raw: RawEnv): EnvVar {
   const value =
     typeof raw.value === "string" ? raw.value : typeof raw.real_value === "string" ? raw.real_value : undefined;
   return {
+    uuid: raw.uuid ?? "",
     key: raw.key ?? "",
     value,
     buildtime: raw.is_buildtime ?? false,
@@ -275,6 +321,8 @@ function toEnvVar(raw: RawEnv): EnvVar {
     shared: raw.is_shared ?? false,
     preview: raw.is_preview ?? false,
     multiline: raw.is_multiline ?? false,
+    literal: raw.is_literal ?? false,
+    shownOnce: raw.is_shown_once ?? false,
     managed: raw.is_coolify ?? false,
   };
 }

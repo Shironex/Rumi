@@ -35,6 +35,8 @@ export interface CoolifyResource {
  * so we render keys + scope flags and note that values are hidden.
  */
 export interface EnvVar {
+  /** Coolify's env uuid — needed to DELETE a var (update/create match on key). */
+  uuid: string;
   key: string;
   value?: string;
   buildtime: boolean;
@@ -43,8 +45,69 @@ export interface EnvVar {
   shared: boolean;
   preview: boolean;
   multiline: boolean;
+  /** Value is treated literally (no shell escaping) at deploy time. */
+  literal: boolean;
+  /** Write-only secret: Coolify shows the value once and never returns it on GET. */
+  shownOnce: boolean;
   /** Managed by Coolify itself (injected platform var), not user-defined. */
   managed: boolean;
+}
+
+/** Body Coolify accepts to create (POST) or update (PATCH) an env var. */
+export interface EnvWrite {
+  key: string;
+  value: string;
+  is_preview: boolean;
+  is_build_time: boolean;
+  is_literal: boolean;
+  is_multiline: boolean;
+  is_shown_once: boolean;
+}
+
+/**
+ * Update payload for an existing var: the new value, with every other flag
+ * carried over from the current var. Coolify's PATCH validates the whole record,
+ * so omitting a flag resets it to false — silently flipping is_literal would
+ * change how a secret is escaped at deploy time. Re-send them all.
+ */
+export function envUpdatePayload(env: EnvVar, value: string): EnvWrite {
+  return {
+    key: env.key,
+    value,
+    is_preview: env.preview,
+    is_build_time: env.buildtime,
+    is_literal: env.literal,
+    is_multiline: env.multiline,
+    is_shown_once: env.shownOnce,
+  };
+}
+
+/** Create payload for a brand-new var; multiline is inferred from the value. */
+export function envCreatePayload(key: string, value: string): EnvWrite {
+  return {
+    key,
+    value,
+    is_preview: false,
+    is_build_time: false,
+    is_literal: false,
+    is_multiline: value.includes("\n"),
+    is_shown_once: false,
+  };
+}
+
+const ENV_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/**
+ * Parse a `KEY=value` line (used by the add-var input). Splits on the first `=`
+ * so values may contain `=`; the key is trimmed and must be a valid shell name.
+ * Returns null when there's no `=` or the key is empty/invalid.
+ */
+export function parseEnvAssignment(input: string): { key: string; value: string } | null {
+  const eq = input.indexOf("=");
+  if (eq < 1) return null;
+  const key = input.slice(0, eq).trim();
+  if (!ENV_KEY_RE.test(key)) return null;
+  return { key, value: input.slice(eq + 1) };
 }
 
 /** One curated line in the config inspector (label + already-stringified value). */

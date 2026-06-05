@@ -60,20 +60,30 @@ export function mockDeployment(): Deployment {
 /** Sample env vars (with values, so the mask/reveal toggle is exercised offline). */
 export function mockEnvVars(): EnvVar[] {
   const base = {
+    uuid: "",
     buildtime: false,
     runtime: true,
     required: false,
     shared: false,
     preview: false,
     multiline: false,
+    literal: false,
+    shownOnce: false,
     managed: false,
   };
   return [
-    { ...base, key: "DATABASE_URL", value: "postgres://app:s3cr3t@db:5432/app", buildtime: true, required: true },
-    { ...base, key: "NODE_ENV", value: "production", buildtime: true },
-    { ...base, key: "LOG_LEVEL", value: "info" },
-    { ...base, key: "SENTRY_DSN", value: "https://abc123@o1.ingest.sentry.io/42", shared: true },
-    { ...base, key: "COOLIFY_FQDN", value: "app.example.com", managed: true },
+    {
+      ...base,
+      uuid: "env-0",
+      key: "DATABASE_URL",
+      value: "postgres://app:s3cr3t@db:5432/app",
+      buildtime: true,
+      required: true,
+    },
+    { ...base, uuid: "env-1", key: "NODE_ENV", value: "production", buildtime: true },
+    { ...base, uuid: "env-2", key: "LOG_LEVEL", value: "info" },
+    { ...base, uuid: "env-3", key: "SENTRY_DSN", value: "https://abc123@o1.ingest.sentry.io/42", shared: true },
+    { ...base, uuid: "env-4", key: "COOLIFY_FQDN", value: "app.example.com", managed: true },
   ];
 }
 
