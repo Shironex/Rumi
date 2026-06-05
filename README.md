@@ -82,7 +82,7 @@ rumi reads its instances from the same file as the official [Coolify CLI](https:
 }
 ```
 
-Create an API token in Coolify, then enable the API and allow-list your IP under **Settings → Advanced → API Settings**. A token with the `read:sensitive` scope is needed to reveal env values; without it, rumi shows env keys only.
+Create an API token in Coolify, then enable the API and allow-list your IP under **Settings → Advanced → API Settings**. A token with the `read:sensitive` scope is needed to reveal env values; without it, rumi shows env keys only. Editing env vars (`↵` edit, `a` add, `x` delete in the inspector) needs a token with **write** access, and the changes apply on the resource's next deploy — rumi does not redeploy for you.
 
 ## Usage
 
@@ -110,6 +110,9 @@ rumi --help     # show help
 | `e` | config + env inspector |
 | `v` | reveal env values (in the inspector) |
 | `y` | copy env vars as a `.env` block (in the inspector) |
+| `↵` | edit the selected env var (in the inspector) |
+| `a` | add an env var, typed as `KEY=value` (in the inspector) |
+| `x` | delete the selected env var (in the inspector) |
 | `?` | help |
 | `q` / `^C` | quit |
 

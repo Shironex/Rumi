@@ -18,6 +18,7 @@
     "probe:servers": "bun run scripts/probe-servers.ts",
     "probe:deploy": "bun run scripts/probe-deploy.ts",
     "probe:env": "bun run scripts/probe-env.ts",
+    "probe:env:write": "bun run scripts/probe-env-write.ts",
     "make:splash": "bun run scripts/make-splash.ts",
     "prepare": "husky"
   },

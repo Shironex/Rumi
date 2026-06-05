@@ -13,6 +13,10 @@ Dates are intentionally absent; things ship when they are ready.
 - **Copy env vars (`y`).** From the config inspector, copy a resource's env vars
   as a ready-to-paste `.env` block. Uses OSC 52 so it works over SSH; needs a
   `read:sensitive` token (otherwise there are only masked keys to copy).
+- **Edit env vars in place.** The config inspector is no longer read-only: `↵`
+  edits the selected var, `a` adds one (`KEY=value`), `x` deletes (behind a
+  confirm). Needs a write-scoped token; changes apply on the next deploy. Update
+  re-sends every flag so PATCH can't silently reset `is_literal` and friends.
 - **Windows installer.** `install.ps1` (PowerShell one-liner) downloads the
   binary, drops it in `%LOCALAPPDATA%\Programs\rumi`, and adds it to the user PATH.
 
@@ -48,7 +52,6 @@ Dates are intentionally absent; things ship when they are ready.
 ## Later / ideas
 
 - Deployment history browsing, not just the latest deploy.
-- Editing env vars in place (currently read-only).
 - Search across resources and contexts.
 - Desktop notifications when a deploy finishes.
 - Distribution via Homebrew, Scoop, and the AUR.
