@@ -18,8 +18,9 @@ const app: CoolifyResource = {
 const payload: EnvWrite = {
   key: "FOO",
   value: "bar",
+  is_buildtime: true,
+  is_runtime: true,
   is_preview: false,
-  is_build_time: true,
   is_literal: false,
   is_multiline: false,
   is_shown_once: false,

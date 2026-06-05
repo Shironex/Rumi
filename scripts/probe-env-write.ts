@@ -47,21 +47,32 @@ try {
 
   console.log(`target: ${target.name} (${target.kind})   probe key: ${key}\n`);
 
+  const rowsForKey = async () => (await client.getEnvVars(target)).filter((e) => e.key === key);
+
   await client.createEnvVar(target, envCreatePayload(key, "rumi-probe-create"));
-  const created = (await client.getEnvVars(target)).find((e) => e.key === key);
-  console.log(created ? "✓ create  (POST /envs, key present after)" : "✗ create  (POST returned but key absent)");
+  const created = await rowsForKey();
+  console.log(
+    created.length ? `✓ create  (POST /envs -> ${created.length} row(s))` : "✗ create  (key absent after POST)",
+  );
+  // An app with preview deployments gets a production + a preview row per key —
+  // expected, not a duplicate. The production (is_preview=false) row is the one
+  // an edit targets.
+  const prod = created.find((e) => !e.preview) ?? created[0];
+  if (created.length > 1)
+    console.log(`  (apps split each key into production + preview — ${created.length} rows here)`);
 
-  if (created) {
-    await client.updateEnvVar(target, envUpdatePayload(created, "rumi-probe-update"));
-    console.log("✓ update  (PATCH /envs accepted)");
-
-    const toDelete = (await client.getEnvVars(target)).find((e) => e.key === key);
-    if (toDelete) {
-      await client.deleteEnvVar(target, toDelete.uuid);
-      const gone = !(await client.getEnvVars(target)).some((e) => e.key === key);
-      console.log(gone ? "✓ delete  (DELETE /envs/{uuid}, key gone after)" : "✗ delete  (key still present)");
-    }
+  if (prod) {
+    await client.updateEnvVar(target, envUpdatePayload(prod, "rumi-probe-update"));
+    const changed = (await rowsForKey()).some((e) => !e.preview && e.value === "rumi-probe-update");
+    console.log(
+      changed ? "✓ update  (PATCH /envs changed the production value)" : "✗ update  (value unchanged after PATCH)",
+    );
   }
+
+  // Delete every row for the key (covers the preview row too) so nothing is left.
+  for (const e of await rowsForKey()) await client.deleteEnvVar(target, e.uuid);
+  const gone = (await rowsForKey()).length === 0;
+  console.log(gone ? "✓ delete  (DELETE /envs/{uuid}, all rows gone)" : "✗ delete  (rows still present)");
 
   console.log("\nDone. If every line is ✓, rumi's env writes match this instance.");
 } catch (err) {

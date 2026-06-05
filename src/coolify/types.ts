@@ -53,12 +53,17 @@ export interface EnvVar {
   managed: boolean;
 }
 
-/** Body Coolify accepts to create (POST) or update (PATCH) an env var. */
+/**
+ * Body Coolify accepts to create (POST) or update (PATCH) an env var. Field names
+ * match the API's GET shape (`is_buildtime`, not `is_build_time` — the latter is a
+ * Terraform-provider alias the REST API rejects with a 422), verified live.
+ */
 export interface EnvWrite {
   key: string;
   value: string;
+  is_buildtime: boolean;
+  is_runtime: boolean;
   is_preview: boolean;
-  is_build_time: boolean;
   is_literal: boolean;
   is_multiline: boolean;
   is_shown_once: boolean;
@@ -74,21 +79,23 @@ export function envUpdatePayload(env: EnvVar, value: string): EnvWrite {
   return {
     key: env.key,
     value,
+    is_buildtime: env.buildtime,
+    is_runtime: env.runtime,
     is_preview: env.preview,
-    is_build_time: env.buildtime,
     is_literal: env.literal,
     is_multiline: env.multiline,
     is_shown_once: env.shownOnce,
   };
 }
 
-/** Create payload for a brand-new var; multiline is inferred from the value. */
+/** Create payload for a brand-new var; runtime by default, multiline inferred. */
 export function envCreatePayload(key: string, value: string): EnvWrite {
   return {
     key,
     value,
+    is_buildtime: false,
+    is_runtime: true,
     is_preview: false,
-    is_build_time: false,
     is_literal: false,
     is_multiline: value.includes("\n"),
     is_shown_once: false,

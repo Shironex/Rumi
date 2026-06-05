@@ -97,24 +97,33 @@ test("parseEnvAssignment rejects missing or invalid keys", () => {
 });
 
 test("envUpdatePayload carries every flag over so PATCH can't reset them", () => {
-  const e = env("SECRET", "old", { buildtime: true, preview: true, literal: true, multiline: true, shownOnce: true });
+  const e = env("SECRET", "old", {
+    buildtime: true,
+    runtime: false,
+    preview: true,
+    literal: true,
+    multiline: true,
+    shownOnce: true,
+  });
   expect(envUpdatePayload(e, "new")).toEqual({
     key: "SECRET",
     value: "new",
+    is_buildtime: true,
+    is_runtime: false,
     is_preview: true,
-    is_build_time: true,
     is_literal: true,
     is_multiline: true,
     is_shown_once: true,
   });
 });
 
-test("envCreatePayload defaults flags false and infers multiline", () => {
+test("envCreatePayload is runtime-by-default and infers multiline", () => {
   expect(envCreatePayload("K", "v")).toEqual({
     key: "K",
     value: "v",
+    is_buildtime: false,
+    is_runtime: true,
     is_preview: false,
-    is_build_time: false,
     is_literal: false,
     is_multiline: false,
     is_shown_once: false,

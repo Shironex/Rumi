@@ -82,18 +82,19 @@ export function ConfigPane({
         {envs.length === 0 ? (
           <text fg={colors.dim}>{"  (none)"}</text>
         ) : (
-          envs
-            .slice(start, end)
-            .map((env, i) => (
-              <EnvRow
-                key={env.key}
-                env={env}
-                reveal={reveal}
-                keyCol={keyCol}
-                valCol={valCol}
-                selected={start + i === selectedIndex}
-              />
-            ))
+          envs.slice(start, end).map((env, i) => (
+            // Key on uuid, not env.key: an app with preview deployments has two
+            // rows per key (production + preview, same key, different uuid), so
+            // keying on env.key would collide and drop/merge rows.
+            <EnvRow
+              key={env.uuid || `${env.key}-${start + i}`}
+              env={env}
+              reveal={reveal}
+              keyCol={keyCol}
+              valCol={valCol}
+              selected={start + i === selectedIndex}
+            />
+          ))
         )}
 
         <text> </text>
