@@ -23,6 +23,13 @@ export default tseslint.config(
       "react-hooks/exhaustive-deps": "warn",
     },
   },
+  {
+    // Tool configs (showcase.config.mjs) run under Node.
+    files: ["**/*.mjs"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
   // Must stay last: turns off rules that would fight Prettier's formatting.
   prettier,
 );

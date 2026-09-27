@@ -1,6 +1,7 @@
 import { TextAttributes } from "@opentui/core";
 import { memo } from "react";
 import { colors } from "../theme.ts";
+import { formatClock } from "../util.ts";
 
 interface Props {
   contextName?: string;
@@ -14,7 +15,7 @@ interface Props {
 
 function clockOf(ts: number | null): string {
   if (!ts) return "—";
-  return new Date(ts).toLocaleTimeString();
+  return formatClock(ts);
 }
 
 // Memoized: all props are primitives, so this skips re-render on the 90ms spinner

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { CoolifyServer } from "../coolify/types.ts";
 import { colors } from "../theme.ts";
+import { formatClock } from "../util.ts";
 
 interface Props {
   servers: CoolifyServer[];
@@ -32,7 +33,7 @@ function healthLabel(s: CoolifyServer): string {
 }
 
 export function ServersPane({ servers, selectedIndex, loading, error, lastUpdated, viewportHeight }: Props) {
-  const title = ` servers (${servers.length})${lastUpdated ? ` · ${new Date(lastUpdated).toLocaleTimeString()}` : ""} `;
+  const title = ` servers (${servers.length})${lastUpdated ? ` · ${formatClock(lastUpdated)}` : ""} `;
   let body: ReactNode;
   // Only blank the pane for an error when there's nothing to show; on a transient
   // poll failure the hook keeps the last-good rows. Servers has no header badge,

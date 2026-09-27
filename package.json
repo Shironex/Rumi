@@ -11,8 +11,8 @@
     "test": "bun test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\" showcase.config.mjs",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\" showcase.config.mjs",
     "smoke": "RUMI_MOCK=1 bun run scripts/render-smoke.tsx",
     "probe": "bun run scripts/probe.ts",
     "probe:servers": "bun run scripts/probe-servers.ts",
@@ -20,6 +20,8 @@
     "probe:env": "bun run scripts/probe-env.ts",
     "probe:env:write": "bun run scripts/probe-env-write.ts",
     "make:splash": "bun run scripts/make-splash.ts",
+    "showcase": "node node_modules/@noctcore/showcase-kit/dist/cli.js all && node node_modules/@noctcore/showcase-kit/dist/cli.js hero",
+    "showcase:readme": "node node_modules/@noctcore/showcase-kit/dist/cli.js readme --cols 2 --base .",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -30,6 +32,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@lydell/node-pty": "1.2.0-beta.15",
+    "@noctcore/showcase-kit": "0.3.0",
     "@types/bun": "latest",
     "@types/react": "^19",
     "eslint": "^10.4.1",
@@ -38,6 +42,7 @@
     "globals": "^17.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.7",
+    "playwright": "1.63.0",
     "prettier": "^3.8.3",
     "typescript-eslint": "^8.60.1"
   },
@@ -48,5 +53,8 @@
     "@opentui/core": "^0.3.0",
     "@opentui/react": "^0.3.0",
     "react": "^19.2.6"
+  },
+  "overrides": {
+    "sharp": "0.35.4"
   }
 }
