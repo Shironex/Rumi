@@ -42,14 +42,14 @@ export function mockLogs(name: string): string[] {
 }
 
 /** Sample deployment + build log for offline UI work. */
-export function mockDeployment(): Deployment {
+export function mockDeployment(name: string): Deployment {
   return {
     uuid: "dep-mock",
     status: "finished",
     commit: "a1b2c3d4",
     commitMessage: "tidy build pipeline",
     lines: [
-      { text: "Starting deployment of acme/web:main", type: "stdout", hidden: false },
+      { text: `Starting deployment of ${name}:main`, type: "stdout", hidden: false },
       { text: "sudo docker run --rm coolify-helper", type: "command", hidden: true },
       { text: "#1 [internal] load build definition", type: "stdout", hidden: false },
       { text: "npm ci", type: "command", hidden: false },

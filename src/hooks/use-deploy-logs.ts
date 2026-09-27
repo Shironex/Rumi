@@ -41,7 +41,7 @@ export function useDeployLogs(
       return;
     }
     if (USE_MOCK) {
-      setState({ deployment: mockDeployment(), loading: false, error: null, supported: true });
+      setState({ deployment: mockDeployment(resource.name), loading: false, error: null, supported: true });
       return;
     }
 
