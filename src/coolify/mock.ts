@@ -9,14 +9,17 @@ import {
   parseState,
 } from "./types.ts";
 
-/** A sample context so offline/CI runs don't depend on a real Coolify config file. */
+/** Sample contexts so offline/CI runs don't depend on a real Coolify config file. */
 export function mockContexts(): CoolifyContext[] {
-  return [{ name: "shini", fqdn: "https://shinictl.xyz", token: "mock-token", default: true }];
+  return [
+    { name: "prod", fqdn: "https://coolify.example.com", token: "mock-token", default: true },
+    { name: "staging", fqdn: "https://staging.coolify.example.com", token: "mock-token", default: false },
+  ];
 }
 
 const SAMPLES: ReadonlyArray<readonly [name: string, rawType: string, status: string]> = [
-  ["lunofi-api", "application", "running:healthy"],
-  ["lunofi-web", "application", "running:healthy"],
+  ["acme-api", "application", "running:healthy"],
+  ["acme-web", "application", "running:healthy"],
   ["worker", "application", "exited:unhealthy"],
   ["postgres", "standalone-postgresql", "running:healthy"],
   ["redis", "standalone-redis", "running:unknown"],
@@ -46,7 +49,7 @@ export function mockDeployment(): Deployment {
     commit: "a1b2c3d4",
     commitMessage: "tidy build pipeline",
     lines: [
-      { text: "Starting deployment of lunofi/web:main", type: "stdout", hidden: false },
+      { text: "Starting deployment of acme/web:main", type: "stdout", hidden: false },
       { text: "sudo docker run --rm coolify-helper", type: "command", hidden: true },
       { text: "#1 [internal] load build definition", type: "stdout", hidden: false },
       { text: "npm ci", type: "command", hidden: false },
@@ -107,7 +110,7 @@ export function mockServers(): CoolifyServer[] {
     {
       uuid: "srv-0",
       name: "production-main",
-      ip: "193.70.35.124",
+      ip: "192.0.2.10",
       description: "primary host",
       reachable: true,
       usable: true,
@@ -117,7 +120,7 @@ export function mockServers(): CoolifyServer[] {
     {
       uuid: "srv-1",
       name: "production-alt",
-      ip: "51.83.100.121",
+      ip: "198.51.100.20",
       reachable: true,
       usable: true,
       isCoolifyHost: false,
@@ -126,7 +129,7 @@ export function mockServers(): CoolifyServer[] {
     {
       uuid: "srv-2",
       name: "edge-cdn",
-      ip: "10.0.0.9",
+      ip: "203.0.113.30",
       reachable: false,
       usable: false,
       isCoolifyHost: false,
@@ -150,7 +153,7 @@ export function mockResources(): CoolifyResource[] {
         fqdn: isApp ? `https://${name}.example.com` : undefined,
         gitBranch: isApp ? "main" : undefined,
         gitCommitSha: isApp ? "a1b2c3d4e5f6" : undefined,
-        gitRepository: isApp ? `git@github.com:lunofi/${name}.git` : undefined,
+        gitRepository: isApp ? `git@git.example.com:acme/${name}.git` : undefined,
         buildPack: isApp ? "nixpacks" : undefined,
         serverStatus: "running",
         lastOnlineAt: "2026-06-02T11:00:00Z",

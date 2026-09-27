@@ -56,19 +56,19 @@ function assert(cond: boolean, msg: string): void {
 }
 
 const t = await testRender(<App />, { width: 160, height: 40 });
-await t.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await t.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 const frame = t.captureCharFrame();
 
 assert(frame.includes("rumi"), "header renders");
 assert(frame.includes("c context"), "context-switch hint in footer");
-assert(frame.includes("shini"), "configured context shows");
+assert(frame.includes("prod"), "configured context shows");
 assert(frame.includes("resources"), "resources pane renders");
-assert(frame.includes("lunofi-api"), "resource row renders");
+assert(frame.includes("acme-api"), "resource row renders");
 assert(frame.includes("detail"), "detail pane renders");
 assert(frame.includes("domains") || frame.includes("branch"), "detail fields render for selected app");
 assert(frame.includes("filter"), "footer hints render");
 
-// Logs overlay for an application (selection starts on lunofi-api). Wait for the
+// Logs overlay for an application (selection starts on acme-api). Wait for the
 // log lines themselves, not just the pane header: the lines land a frame later
 // (set inside the hook's effect), so gating on the header alone races in CI.
 t.mockInput.pressKey("l");
@@ -112,7 +112,7 @@ assert(empty.captureCharFrame().includes("No log output yet"), "logs pane shows 
 empty.renderer.destroy();
 
 // An unreachable instance — the friendly CoolifyConnectionError message, not a raw fetch error.
-const connErr = new CoolifyConnectionError("shini", "https://shinictl.xyz", new Error("connect ECONNREFUSED"));
+const connErr = new CoolifyConnectionError("prod", "https://coolify.example.com", new Error("connect ECONNREFUSED"));
 const err = await testRender(
   <LogsPane
     resource={app}
@@ -133,7 +133,7 @@ err.renderer.destroy();
 // An app that has never been deployed — distinct from "still waiting for a build".
 const nodep = await testRender(
   <DeployLogsPane
-    name="lunofi-api"
+    name="acme-api"
     deployment={null}
     loading={false}
     error={null}
@@ -152,7 +152,7 @@ nodep.renderer.destroy();
 // config pane calls that out instead of looking like a rumi bug.
 const noscope = await testRender(
   <ConfigPane
-    name="lunofi-api"
+    name="acme-api"
     config={[]}
     envs={mockEnvVars()}
     valuesAvailable={false}
@@ -173,9 +173,9 @@ assert(
 );
 noscope.renderer.destroy();
 
-// Action confirm modal - fresh App so selection is the first app (lunofi-api).
+// Action confirm modal - fresh App so selection is the first app (acme-api).
 const a = await testRender(<App />, { width: 160, height: 40 });
-await a.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await a.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 a.mockInput.pressKey("r");
 await a.waitForFrame((f) => f.includes("Restart this resource?"), { maxPasses: 300 });
 const confirmFrame = a.captureCharFrame();
@@ -194,7 +194,7 @@ a.renderer.destroy();
 
 // Deploy logs on demand (shift+l) without triggering an action.
 const dl = await testRender(<App />, { width: 160, height: 40 });
-await dl.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await dl.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 dl.mockInput.pressKey("l", { shift: true });
 await dl.waitForFrame((f) => f.includes("deploy ·"), { maxPasses: 300 });
 assert(dl.captureCharFrame().includes("deploy ·"), "shift+l opens deploy logs on demand");
@@ -202,7 +202,7 @@ dl.renderer.destroy();
 
 // Context switcher modal - fresh App, real contexts loaded from the CLI config.
 const b = await testRender(<App />, { width: 160, height: 40 });
-await b.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await b.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 b.mockInput.pressKey("c");
 await b.waitForFrame((f) => f.includes("switch context"), { maxPasses: 300 });
 assert(b.captureCharFrame().includes("switch context"), "c opens the context switcher");
@@ -210,16 +210,16 @@ b.renderer.destroy();
 
 // Help overlay opens on ?.
 const hp = await testRender(<App />, { width: 160, height: 40 });
-await hp.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await hp.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 hp.mockInput.pressKey("?");
 await hp.waitForFrame((f) => f.includes("rumi · keys"), { maxPasses: 300 });
 assert(hp.captureCharFrame().includes("rumi · keys"), "? opens the help overlay");
 assert(hp.captureCharFrame().includes("copy env to clipboard"), "help lists the copy-env key");
 hp.renderer.destroy();
 
-// Config + env inspector opens on e (selection starts on lunofi-api, an app).
+// Config + env inspector opens on e (selection starts on acme-api, an app).
 const ci = await testRender(<App />, { width: 160, height: 40 });
-await ci.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await ci.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 ci.mockInput.pressKey("e");
 await ci.waitForFrame((f) => f.includes("DATABASE_URL"), { maxPasses: 300 });
 const cfgFrame = ci.captureCharFrame();
@@ -279,8 +279,8 @@ assert(ci.captureCharFrame().includes("▸ NODE_ENV"), "↓ moves the env cursor
 ci.renderer.destroy();
 
 // Splash screen - rendered standalone (in-app it auto-dismisses once data loads).
-const sp = await testRender(<Splash contextName="shini" error={null} spinner="⠋" />, { width: 90, height: 48 });
-await sp.waitForFrame((f) => f.includes("connecting to shini"), { maxPasses: 200 });
+const sp = await testRender(<Splash contextName="prod" error={null} spinner="⠋" />, { width: 90, height: 48 });
+await sp.waitForFrame((f) => f.includes("connecting to prod"), { maxPasses: 200 });
 const splashFrame = sp.captureCharFrame();
 assert(splashFrame.includes("@@@"), "splash ascii art renders");
 assert(splashFrame.includes("k9s-style control for Coolify"), "splash tagline renders");
@@ -291,8 +291,8 @@ sp.renderer.destroy();
 // lands, so the splash stays up); it must show the actionable message, not spin.
 const spErr = await testRender(
   <Splash
-    contextName="shini"
-    error={'Can\'t reach "shini" (https://shinictl.xyz). Check the instance is online and the URL is correct.'}
+    contextName="prod"
+    error={'Can\'t reach "prod" (https://coolify.example.com). Check the instance is online and the URL is correct.'}
     spinner="⠋"
   />,
   { width: 90, height: 48 },
@@ -311,7 +311,7 @@ o.renderer.destroy();
 
 // Servers view - fresh App, tab switches resources -> servers.
 const s = await testRender(<App />, { width: 160, height: 40 });
-await s.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 300 });
+await s.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 300 });
 s.mockInput.pressTab();
 await s.waitForFrame((f) => f.includes("production-main"), { maxPasses: 300 });
 const serversFrame = s.captureCharFrame();
@@ -354,9 +354,9 @@ const rErr = await testRender(
   />,
   { width: 140, height: 16 },
 );
-await rErr.waitForFrame((f) => f.includes("lunofi-api"), { maxPasses: 200 });
+await rErr.waitForFrame((f) => f.includes("acme-api"), { maxPasses: 200 });
 assert(
-  rErr.captureCharFrame().includes("lunofi-api"),
+  rErr.captureCharFrame().includes("acme-api"),
   "resources table keeps last-good rows on a transient poll error (S4)",
 );
 rErr.renderer.destroy();
