@@ -128,8 +128,8 @@ irm https://raw.githubusercontent.com/Shironex/Rumi/main/install.ps1 | iex
 This drops `rumi.exe` into `%LOCALAPPDATA%\Programs\rumi` (override with `$env:RUMI_INSTALL_DIR`) and adds it to your
 user `PATH`; open a new terminal and run `rumi`. You can also grab `rumi-windows-x64.exe` from the
 [releases page](https://github.com/Shironex/Rumi/releases) by hand. Windows support is newer and still experimental:
-builds are x64 only (arm64 Windows runs the x64 binary under emulation), and like every platform, the binary is only
-published once the render smoke test passes on the Windows runner. `rumi update` works the same way there.
+builds are x64 only (arm64 Windows runs the x64 binary under emulation). As on every platform, a release binary is
+published only after the render smoke test passes on its runner, and `rumi update` works the same way there.
 
 ### Configuration
 
