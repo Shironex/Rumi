@@ -3,7 +3,7 @@ import { type CoolifyContext, NO_CONTEXT_MESSAGE } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockServers } from "../coolify/mock.ts";
 import type { CoolifyServer } from "../coolify/types.ts";
-import { USE_MOCK } from "../env.ts";
+import { MOCK_NOW, USE_MOCK } from "../env.ts";
 import { clamp, isAbortError } from "../util.ts";
 
 const POLL_MS = 10000;
@@ -42,7 +42,7 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
         setServers(list);
         setLoading(false);
         setError(null);
-        setLastUpdated(Date.now());
+        setLastUpdated(USE_MOCK ? MOCK_NOW : Date.now());
       } catch (err) {
         if (isAbortError(err, signal)) return;
         setLoading(false);
@@ -63,7 +63,7 @@ export function useServers(ctx: CoolifyContext | undefined, active: boolean): Se
     setLoading(true);
     setError(null);
     void load(controller.signal);
-    const timer = setInterval(() => void load(controller.signal), POLL_MS);
+    const timer = USE_MOCK ? undefined : setInterval(() => void load(controller.signal), POLL_MS);
     return () => {
       controller.abort();
       clearInterval(timer);

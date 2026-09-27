@@ -26,7 +26,8 @@ function loadSafe(): LoadResult {
 
 /** Initial active index: last-saved context name, else the `default` flag, else first. */
 function initialIndex(list: CoolifyContext[]): number {
-  const savedName = loadSettings().activeContext;
+  // Mock runs never read the real settings file.
+  const savedName = USE_MOCK ? undefined : loadSettings().activeContext;
   const savedIdx = savedName ? list.findIndex((c) => c.name === savedName) : -1;
   if (savedIdx >= 0) return savedIdx;
   return Math.max(

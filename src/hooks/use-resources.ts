@@ -3,7 +3,7 @@ import { type CoolifyContext, NO_CONTEXT_MESSAGE } from "../config.ts";
 import { CoolifyClient } from "../coolify/client.ts";
 import { mockResources } from "../coolify/mock.ts";
 import { type CoolifyResource, sortResources } from "../coolify/types.ts";
-import { USE_MOCK } from "../env.ts";
+import { MOCK_NOW, USE_MOCK } from "../env.ts";
 import { isAbortError } from "../util.ts";
 
 const POLL_MS = 5000;
@@ -35,7 +35,12 @@ export function useResources(ctx: CoolifyContext | undefined): ResourcesState & 
       try {
         const resources = USE_MOCK ? mockResources() : await new CoolifyClient(ctx).listResources(signal);
         if (signal?.aborted) return;
-        setState({ resources: sortResources(resources), loading: false, error: null, lastUpdated: Date.now() });
+        setState({
+          resources: sortResources(resources),
+          loading: false,
+          error: null,
+          lastUpdated: USE_MOCK ? MOCK_NOW : Date.now(),
+        });
       } catch (err) {
         if (isAbortError(err, signal)) return;
         setState((prev) => ({ ...prev, loading: false, error: (err as Error).message }));
@@ -54,7 +59,8 @@ export function useResources(ctx: CoolifyContext | undefined): ResourcesState & 
     ctrlRef.current = controller;
     setState((prev) => ({ ...prev, loading: true, error: null }));
     void load(controller.signal);
-    const timer = setInterval(() => void load(controller.signal), POLL_MS);
+    // Mock data never changes, so there is nothing to poll for.
+    const timer = USE_MOCK ? undefined : setInterval(() => void load(controller.signal), POLL_MS);
     return () => {
       controller.abort();
       clearInterval(timer);

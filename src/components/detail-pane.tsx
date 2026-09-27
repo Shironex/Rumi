@@ -2,6 +2,7 @@ import { TextAttributes } from "@opentui/core";
 import { memo } from "react";
 import type { CoolifyResource } from "../coolify/types.ts";
 import { colors, stateColor } from "../theme.ts";
+import { formatDateTime } from "../util.ts";
 
 const WIDTH = 46;
 const VALUE_MAX = 32;
@@ -13,7 +14,7 @@ function truncate(value: string, max: number): string {
 function formatTime(value?: string): string | undefined {
   if (!value) return undefined;
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? value : d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? value : formatDateTime(d);
 }
 
 function Row({ label, value, valueColor }: { label: string; value?: string; valueColor?: string }) {
